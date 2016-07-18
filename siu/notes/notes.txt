@@ -1,0 +1,21 @@
+# enable 'sftp via local console port'
+uselocalsftp
+# enable debug commands
+debug
+startsession bcm1
+# send the backup file via sftp
+backup bcm1 sftp://sftp:sftp@192.168.1.9/sftp/siu.bin passwd
+endsession bcm1
+
+# get some information about the device
+caldate
+calexpdate
+calvalue
+dataencryption print
+dump
+getirpversion
+
+traceallmoattributeinlog
+syslog read -s event
+syslog read -s messages
+syslog read
