@@ -1,0 +1,36 @@
+
+enum l2tpd_ctrl_con_state {
+	L2CC_S_IDLE,
+	L2CC_S_WAIT_CTL_REPLY,
+	L2CC_S_WAIT_CTL_CONN,
+	L2CC_S_ESTABLISHED,
+};
+
+enum l2tpd_ctrl_con_event {
+	L2CC_E_LOCAL_OPEN_REQ,
+	L2CC_E_LOCAL_CLOSE_REQ,
+	L2CC_E_RX_SCCRQ,
+	L2CC_E_RX_SCCRP,
+	L2CC_E_RX_SCCCN,
+	L2CC_E_RX_STOP_CCN,
+};
+
+
+/* ICRQ recipient */
+enum l2tpd_in_call_state {
+	L2IC_S_IDLE,
+	L2IC_S_WAIT_CONN,
+	L2IC_S_ESTABLISHED,
+};
+
+enum l2tpd_in_call_event {
+	L2IC_E_START,
+	L2IC_E_RX_ICCN,
+	L2IC_E_RX_ICRP,
+	L2IC_E_RX_CDN,
+	L2IC_E_LOCAL_CLOSE_REQ,
+	L2IC_E_CTRL_CONN_OPEN,
+	L2IC_E_RX_ICRP,
+	L2IC_E_RX_ICRQ,
+};
+
