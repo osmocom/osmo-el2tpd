@@ -15,16 +15,11 @@
 
 #include "l2tp_protocol.h"
 #include "l2tpd.h"
+#include "l2tpd_fsm.h"
 
-/* swap all fields of the l2tp_control header structure */
-static void l2tp_hdr_swap(struct l2tp_control_hdr *ch)
-{
-	ch->ver = ntohs(ch->ver);
-	ch->length = ntohs(ch->length);
-	ch->ccid = ntohl(ch->ccid);
-	ch->Ns = ntohs(ch->Ns);
-	ch->Nr = ntohs(ch->Nr);
-}
+/***********************************************************************
+ * AVP Parser / Encoder
+ ***********************************************************************/
 
 /* a parsed representation of an L2TP AVP */
 struct avp_parsed {
@@ -36,7 +31,7 @@ struct avp_parsed {
 	uint8_t *data;
 };
 
-/* parse the AVP at msg->data + offset and return the new offset */
+/* parse single AVP at msg->data + offset and return the new offset */
 static int msgb_avp_parse(struct avp_parsed *ap, struct msgb *msg, int offset)
 {
 	uint32_t msgb_left = msgb_length(msg) - offset;
@@ -65,6 +60,81 @@ static int msgb_avp_parse(struct avp_parsed *ap, struct msgb *msg, int offset)
 	ap->h = !!(ah->m_h_length & 0x4000);
 
 	return offset + avp_len;
+}
+
+struct avps_parsed {
+	unsigned int num_avp;
+	struct avp_parsed avp[64];
+};
+
+static int msgb_avps_parse(struct avps_parsed *avps, struct msgb *msg, int offset)
+{
+	memset(avps, 0, sizeof(*avps));
+
+	while (msgb_length(msg) - offset > 0) {
+		struct avp_parsed *avp = avps->avp[avps->num_avps++];
+		int rc = msgb_avp_parse(avp, msg, offset);
+		if (rc < 0)
+			return rc;
+		else
+			offset = rc;
+	}
+	return num_avps;
+}
+
+static struct avp_parsed *
+avps_parsed_find(struct avps_parsed *avps, uint16_t vendor_id, uint16_t type)
+{
+	unsigned int i;
+
+	for (i = 0; i < avps->num_avp; i++) {
+		struct avp_parsed *avp = &avps->avp[i];
+		if (avp->vendor_id == vendor_id && avp->type == type)
+			return avp;
+	}
+	return NULL;
+}
+
+static uint8_t avpp_val(struct avps_parsed *avps, uint16_t vendor_id, uint16_t type)
+{
+	struct avp_parsed *avp = avps_parsed_find(avps, vendor_id, type);
+	if (!avp)
+		return NULL;
+	return avp->data;
+}
+
+static int avpp_len(struct avps_parsed *avps, uint16_t vendor_id, uint16_t type)
+{
+	struct avp_parsed *avp = avps_parsed_find(avps, vendor_id, type);
+	if (!avp)
+		return 0;
+	return avp->data_len;
+}
+
+int avpp_val_u32(struct avps_parsed *avps, uint16_t vendor_id, uint16_t type,
+		 uint32_t *u32)
+{
+	struct avp_parsed *avp = avps_parsed_find(avps, vendor_id, type);
+	if (!avp)
+		return -ENODEV;
+	if (avp->data_len < sizeof(*u32))
+		return -EINVAL;
+
+	u32 = *(uint32_t *)avp->data;
+	return 0;
+}
+
+int avpp_val_u16(struct avps_parsed *avps, uint16_t vendor_id, uint16_t type,
+		 uint16_t *u16)
+{
+	struct avp_parsed *avp = avps_parsed_find(avps, vendor_id, type);
+	if (!avp)
+		return -ENODEV;
+	if (avp->data_len < sizeof(*u16))
+		return -EINVAL;
+
+	u16 = *(uint16_t *)avp->data;
+	return 0;
 }
 
 /* store an AVP at the end of the msg */
@@ -114,6 +184,21 @@ static int msgb_avp_put_u32(struct msgb *msg, uint16_t vendor, uint16_t avp_type
 static int msgb_avp_put_msgt(struct msgb *msg, uint16_t vendor, uint16_t msg_type)
 {
 	return msgb_avp_put_u16(msg, vendor, AVP_IETF_CTRL_MSG, msg_type, true);
+}
+
+
+/***********************************************************************
+ * Message utilities
+ ***********************************************************************/
+
+/* swap all fields of the l2tp_control header structure */
+static void l2tp_hdr_swap(struct l2tp_control_hdr *ch)
+{
+	ch->ver = ntohs(ch->ver);
+	ch->length = ntohs(ch->length);
+	ch->ccid = ntohl(ch->ccid);
+	ch->Ns = ntohs(ch->Ns);
+	ch->Nr = ntohs(ch->Nr);
 }
 
 static struct msgb *l2tp_msgb_alloc(void)
@@ -187,10 +272,16 @@ static int l2tp_msgb_tx(struct msgb *msg)
 	/* then insert/patch the message digest AVP */
 	digest_avp_update(msg);
 
+	/* FIXME: put in the queue for reliable re-transmission */
+
 	/* FIXME: actually transmit it */
 }
 
-static int tx_scc_rp(uint32_t ccid)
+/***********************************************************************
+ * IETF specified messages
+ ***********************************************************************/
+
+static int tx_scc_rp(struct l2tpd_connection *lc)
 {
 	struct msgb *msg = l2tp_msgb_alloc();
 	const uint8_t eric_ver3_only[12] = { 0,0,0,3,  0,0,0,0, 0,0,0,0 };
@@ -199,7 +290,8 @@ static int tx_scc_rp(uint32_t ccid)
 
 	msgb_avp_put_msgt(msg, VENDOR_IETF, IETF_CTRLMSG_SCCRP);
 	msgb_avp_put_digest(msg);
-	msgb_avp_put_u32(msg, VENDOR_IETF, AVP_IETF_AS_CTRL_CON_ID, ccid, true);
+	msgb_avp_put_u32(msg, VENDOR_IETF, AVP_IETF_AS_CTRL_CON_ID,
+			 lc->remote.ccid, true);
 	msgb_avp_put(msg, VENDOR_ERICSSON, AVP_ERIC_PROTO_VER,
 		     eric_ver3_only, sizeof(eric_ver3_only), true);
 	msgb_avp_put(msg, VENDOR_IETF, AVP_IETF_HOST_NAME,
@@ -212,10 +304,10 @@ static int tx_scc_rp(uint32_t ccid)
 	return l2tp_msgb_tx(msg);
 }
 
-static int tx_tc_rq()
+static int tx_tc_rq(struct l2tpd_session *ls)
 {
 	struct msgb *msg = l2tp_msgb_alloc();
-	const uint8_t tcg[] = { 0x00, 0x19, 0x01, 0x1f, 0x05, 
+	const uint8_t tcg[] = { 0x00, 0x19, 0x01, 0x1f, 0x05,
 				0, 10, 11, 12, 62, /* SAPIs */
 				10, 251, 134, 1, /* IP */
 				0x00, 0x01, 0x05, 0x05, 0xb9 };
@@ -228,7 +320,7 @@ static int tx_tc_rq()
 	return l2tp_msgb_tx(msg);
 }
 
-static int tx_altc_rq()
+static int tx_altc_rq(struct l2tpd_session *ls)
 {
 	struct msgb *msg = l2tp_msgb_alloc();
 	const uint8_t tcsc[] = { 2,
@@ -243,7 +335,7 @@ static int tx_altc_rq()
 	return l2tp_msgb_tx(msg);
 }
 
-static int tx_tc_rp(struct l2tpd_session *ls)
+static int tx_ic_rp(struct l2tpd_session *ls)
 {
 	struct msgb *msg = l2tp_msgb_alloc();
 
@@ -266,7 +358,7 @@ static int tx_tc_rp(struct l2tpd_session *ls)
 	return l2tp_msgb_tx(msg);
 }
 
-static int tx_ack()
+static int tx_ack(struct l2tpd_session *ls)
 {
 	struct msgb *msg = l2tp_msgb_alloc();
 
@@ -276,7 +368,7 @@ static int tx_ack()
 	return l2tp_msgb_tx(msg);
 }
 
-static int tx_hello()
+static int tx_hello(struct l2tpd_session *ls)
 {
 	struct msgb *msg = l2tp_msgb_alloc();
 
@@ -286,49 +378,145 @@ static int tx_hello()
 	return l2tp_msgb_tx(msg);
 }
 
-static int rx_scc_rq(struct msgb *msg)
+/* Incoming "Start Control-Connection Request" from SIU */
+static int rx_scc_rq(struct msgb *msg, struct avps_parsed *ap)
 {
-}
+	struct l2tp_control_hdr *ch = msgb_l2tph(msg);
+	struct l2tpd_connection *l2cc;
+	uint16_t pw;
 
-static int rx_scc_cn(struct msgb *msg)
-{
-}
-
-static int rx_stop_ccn(struct msgb *msg)
-{
-}
-
-static int rx_ic_rq(struct msgb *msg)
-{
-}
-
-static int rx_ic_cn(struct msgb *msg)
-{
-}
-
-/* Receive an IETF specified control message */
-static int l2tp_rcvmsg_control_ietf(struct msgb *msg, struct avp_parsed *first_ap)
-{
-	uint16_t msg_type;
-
-	if (first_ap->data_len != 2) {
-		LOGP(DL2TP, LOGL_ERROR, "Control Msg AVP length !=2: %u\n",
-			first_ap->data_len);
+	/* Abort if Pseudowire capability doesn't include 6(HDLC) */
+	if (avpp_val_u16(ap, VENDOR_IETF, AVP_IETF_PW_CAP_LIST, &pw) < 0 ||
+	    pw != 0x0006) {
+		LOGP(DL2TP, LOGL_ERROR, "Pseudowire != HDLC\n");
 		return -1;
 	}
 
-	msg_type = osmo_load16be(first_ap->data);
+	if (ch->ccid == 0) {
+		uint32_t remote_ccid, router_id;
+		l2cc = l2tpd_cc_alloc(l2i);
+		/* Get Assigned CCID and store in l2cc->remote.ccid */
+		avpp_val_u32(ap, VENDOR_IETF, AVP_IETF_AS_CTRL_CON_ID,
+			     &remote_ccid);
+		l2cc->remote.ccid = remote_ccid;
+		/* Router ID AVP */
+		if (avpp_val_u32(ap, VENDOR_IETF, AVP_IETF_ROUTER_ID,
+				 &router_id))
+			l2cc->remote.router_id = router_id;
+		/* Host Name AVP */
+		host_name = avpp_val(ap, VENDOR_IETF, AVP_IETF_HOST_NAME);
+		if (host_name)
+			l2cc->remote.host_name = talloc_strdup(l2cc, host_name);
+	}
+	/* FIXME: start fsm first! */
+
+	osmo_fsm_inst_dispatch(l2cc->fsm, L2CC_E_RX_SCCRQ, msg);
+	return 0;
+}
+
+/* Incoming "Start Control-Connection Connected" from SIU */
+static int rx_scc_cn(struct msgb *msg, struct avps_parsed *ap)
+{
+	struct l2tp_control_hdr *ch = msgb_l2tph(msg);
+	struct l2tpd_connection *l2cc = l2tpd_cc_find_by_l_cc_id(ch->ccid);
+
+	if (!l2cc)
+		return -1;
+
+	osmo_fsm_inst_dispatch(l2cc->fsm, L2CC_E_RX_SCCCN, msg);
+	/* FIXME: Send TCRQ and ALTCRQ */
+	return 0;
+}
+
+/* Incoming "Stop Control-Connection Notificiation" from SIU */
+static int rx_stop_ccn(struct msgb *msg, struct avps_parsed *ap)
+{
+	struct l2tp_control_hdr *ch = msgb_l2tph(msg);
+	struct l2tpd_connection *l2cc = l2tpd_cc_find_by_l_cc_id(ch->ccid);
+
+	if (!l2cc)
+		return -1;
+
+	osmo_fsm_inst_dispatch(l2cc->fsm, L2CC_E_RX_STOP_CCN, msg);
+	return 0;
+}
+
+/* Incoming "Incoming Call Request" from SIU */
+static int rx_ic_rq(struct msgb *msg, struct avps_parsed *ap)
+{
+	struct l2tp_control_hdr *ch = msgb_l2tph(msg);
+	struct l2tpd_connection *l2cc = l2tpd_cc_find_by_l_cc_id(ch->ccid);
+	struct l2tpd_session *l2s;
+	uint32_t r_sess_id = avpp_val_u32(ap, VENDOR_IETF, AVP_IETF_REM_SESS_ID);
+	uint32_t l_sess_id = avpp_val_u32(ap, VENDOR_IETF, AVP_IETF_LOC_SESS_ID);
+
+	if (!l2cc)
+		return -1;
+	if (avpp_val_u32(ap, VENDOR_IETF, AVP_IETF_REM_SESS_ID, &r_sess_id))
+		return -1;
+	if (avpp_val_u32(ap, VENDOR_IETF, AVP_IETF_LOC_SESS_ID, &l_sess_id))
+		return -1;
+
+	if (r_sess_id == 0) {
+		l2s = l2tpd_sess_alloc(l2cc);
+		l2s->r_sess_id = l_sess_id;
+		avpp_val_u16(ap, VENDOR_IETF, AVP_IETF_PW_TYPE, &l2s->pw_type);
+	} else {
+		l2s = l2tpd_sess_find_by_l_s_id(l2cc, r_sess_id);
+		if (!l2s) {
+			LOGP(DL2TPD, LOGL_ERROR, "NoSession %u\n",
+				r_sess_id);
+			return -1;
+		}
+	}
+
+	osmo_fsm_inst_dispatch(l2ic->fsm, L2IC_E_RX_ICRQ, msg);
+	return 0;
+}
+
+/* Incoming "Incoming Call Connected" from SIU */
+static int rx_ic_cn(struct msgb *msg, struct avps_parsed *ap)
+{
+	struct l2tp_control_hdr *ch = msgb_l2tph(msg);
+	struct l2tpd_connection *l2cc = l2tpd_cc_find_by_l_cc_id(ch->ccid);
+
+	if (!l2cc)
+		return -1;
+
+	osmo_fsm_inst_dispatch(l2ic->fsm, L2IC_E_RX_ICCN, msg);
+	return 0;
+}
+
+/* Incoming "Incoming Call Connected" from SIU */
+static int rx_cdn(struct msgb *msg, struct avps_parsed *ap)
+{
+	struct l2tp_control_hdr *ch = msgb_l2tph(msg);
+	struct l2tpd_connection *l2cc = l2tpd_cc_find_by_l_cc_id(ch->ccid);
+
+	if (!l2cc)
+		return -1;
+
+	osmo_fsm_inst_dispatch(l2ic->fsm, L2IC_E_RX_CDN, msg);
+	return 0;
+}
+
+/* Receive an IETF specified control message */
+static int l2tp_rcvmsg_control_ietf(struct msgb *msg, struct avps_parsed *ap,
+				    uint16_t msg_type)
+{
 	switch (msg_type) {
 	case IETF_CTRLMSG_SCCRQ:
-		return rx_scc_rq(msg);
+		return rx_scc_rq(msg, ap);
 	case IETF_CTRLMSG_SCCCN:
-		return rx_scc_cn(msg);
+		return rx_scc_cn(msg, ap);
 	case IETF_CTRLMSG_STOPCCN:
-		return rx_stop_ccn(msg);
+		return rx_stop_ccn(msg, ap);
 	case IETF_CTRLMSG_ICRQ:
-		return rx_ic_rq(msg);
+		return rx_ic_rq(msg, ap);
 	case IETF_CTRLMSG_ICCN:
-		return rx_ic_cn(msg);
+		return rx_ic_cn(msg, ap);
+	case IETF_CTRLMSG_CDN:
+		return rx_cdn(msg, ap);
 	default:
 		LOGP(DL2TP, LOGL_ERROR, "Unknown/Unhandled IETF Control "
 			"Message Type 0x%04x\n", msg_type);
@@ -336,31 +524,39 @@ static int l2tp_rcvmsg_control_ietf(struct msgb *msg, struct avp_parsed *first_a
 	}
 }
 
-static int rx_eri_tcrp(struct msgb *mgs)
+/***********************************************************************
+ * Ericsson specific messages
+ ***********************************************************************/
+
+static int rx_eri_tcrp(struct msgb *msg, struct avps_parsed *ap)
 {
+	struct l2tp_control_hdr *ch = msgb_l2tph(msg);
+	struct l2tpd_connection *l2cc = l2tpd_cc_find_by_l_cc_id(ch->ccid);
+
+	if (!l2cc)
+		return -1;
+	return 0;
 }
 
-static int rx_eri_altcrp(struct msgb *msg)
+static int rx_eri_altcrp(struct msgb *msg, struct avps_parsed *ap)
 {
+	struct l2tp_control_hdr *ch = msgb_l2tph(msg);
+	struct l2tpd_connection *l2cc = l2tpd_cc_find_by_l_cc_id(ch->ccid);
+
+	if (!l2cc)
+		return -1;
+	return 0;
 }
 
 /* Receive an Ericsson specific control message */
-static int l2tp_rcvmsg_control_ericsson(struct msgb *msg, struct avp_parsed *first_ap)
+static int l2tp_rcvmsg_control_ericsson(struct msgb *msg, struct avps_parsed *ap,
+					uint16_t msg_type)
 {
-	uint16_t msg_type;
-
-	if (first_ap->data_len != 2) {
-		LOGP(DL2TP, LOGL_ERROR, "Control Msg AVP length !=2: %u\n",
-			first_ap->data_len);
-		return -1;
-	}
-
-	msg_type = osmo_load16be(first_ap->data);
 	switch (msg_type) {
 	case ERIC_CTRLMSG_TCRP:
-		return rx_eri_tcrp(msg);
+		return rx_eri_tcrp(msg, ap);
 	case ERIC_CTRLMSG_ALTCRP:
-		return rx_eri_altcrp(msg);
+		return rx_eri_altcrp(msg, ap);
 	default:
 		LOGP(DL2TP, LOGL_ERROR, "Unknown/Unhandled Ericsson Control "
 			"Message Type 0x%04x\n", msg_type);
@@ -371,7 +567,9 @@ static int l2tp_rcvmsg_control_ericsson(struct msgb *msg, struct avp_parsed *fir
 static int l2tp_rcvmsg_control(struct msgb *msg)
 {
 	struct l2tp_control_hdr *ch = msgb_l2tph(msg);
-	struct avp_parsed ap;
+	struct avps_parsed ap;
+	struct avp_parsed *first_avp;
+	uint16_t msg_type;
 	int rc;
 
 	l2tp_hdr_swap(ch);
@@ -402,16 +600,29 @@ static int l2tp_rcvmsg_control(struct msgb *msg)
 	}
 
 	/* Parse the first AVP an see if it is Control Message */
-	rc = msgb_avp_parse(&ap, msg, sizeof(*ch));
+	rc = msgb_avps_parse(&ap, msg, sizeof(*ch));
 	if (rc < 0) {
 		LOGP(DL2TP, LOGL_ERROR, "Error in parsing AVPs\n");
 		return rc;
 	}
+	if (ap.num_avp <= 0) {
+		LOGP(DL2TP, LOGL_ERROR, "Not at least one AVP\n");
+		return -1;
+	}
+	first_avp = &ap.avp[0];
 
-	if (ap.vendor_id == VENDOR_IETF && ap.type == AVP_IETF_CTRL_MSG)
+	if (first_avp->data_len != 2) {
+		LOGP(DL2TP, LOGL_ERROR, "Control Msg AVP length !=2: %u\n",
+			first_avp->data_len);
+		return -1;
+	}
+	msg_type = osmo_load16be(first_avp->data);
+
+	if (first_avp->vendor_id == VENDOR_IETF &&
+	    first_avp->type == AVP_IETF_CTRL_MSG)
 		return l2tp_rcvmsg_control_ietf(msg, &ap);
-	else if (ap.vendor_id == VENDOR_ERICSSON &&
-		 ap.type == AVP_ERIC_CTRL_MSG)
+	else if (first_avp->vendor_id == VENDOR_ERICSSON &&
+		 firrst_avp->type == AVP_ERIC_CTRL_MSG)
 		return l2tp_rcvmsg_control_ericsson(msg, &ap);
 
 }
@@ -460,17 +671,6 @@ static int l2tp_ip_read_cb(struct osmo_fd *ofd, unsigned int what)
 
 	return l2tp_rcvmsg(msg, true);
 }
-
-struct l2tpd_instance {
-	/* list of l2tpd_connection */
-	struct llist_head connections;
-
-	struct osmo_fd l2tp_ofd;
-
-	struct {
-		const char *bind_ip;
-	} cfg;
-};
 
 static int l2tpd_instance_start(struct l2tpd_instance *li)
 {
