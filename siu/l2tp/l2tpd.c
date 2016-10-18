@@ -12,9 +12,11 @@
 #include <osmocom/core/logging.h>
 #include <osmocom/core/select.h>
 #include <osmocom/core/socket.h>
+#include <osmocom/core/fsm.h>
 
 #include "l2tp_protocol.h"
 #include "l2tpd.h"
+#include "l2tpd_data.h"
 #include "l2tpd_fsm.h"
 
 /***********************************************************************
@@ -30,6 +32,9 @@ struct avp_parsed {
 		h:1;
 	uint8_t *data;
 };
+
+struct l2tpd_instance *l2i;
+/* FIXME: global static instance */
 
 /* parse single AVP at msg->data + offset and return the new offset */
 static int msgb_avp_parse(struct avp_parsed *ap, struct msgb *msg, int offset)
@@ -72,14 +77,14 @@ static int msgb_avps_parse(struct avps_parsed *avps, struct msgb *msg, int offse
 	memset(avps, 0, sizeof(*avps));
 
 	while (msgb_length(msg) - offset > 0) {
-		struct avp_parsed *avp = avps->avp[avps->num_avps++];
+		struct avp_parsed *avp = &avps->avp[avps->num_avp++];
 		int rc = msgb_avp_parse(avp, msg, offset);
 		if (rc < 0)
 			return rc;
 		else
 			offset = rc;
 	}
-	return num_avps;
+	return avps->num_avp;
 }
 
 static struct avp_parsed *
@@ -95,7 +100,7 @@ avps_parsed_find(struct avps_parsed *avps, uint16_t vendor_id, uint16_t type)
 	return NULL;
 }
 
-static uint8_t avpp_val(struct avps_parsed *avps, uint16_t vendor_id, uint16_t type)
+static uint8_t *avpp_val(struct avps_parsed *avps, uint16_t vendor_id, uint16_t type)
 {
 	struct avp_parsed *avp = avps_parsed_find(avps, vendor_id, type);
 	if (!avp)
@@ -120,7 +125,7 @@ int avpp_val_u32(struct avps_parsed *avps, uint16_t vendor_id, uint16_t type,
 	if (avp->data_len < sizeof(*u32))
 		return -EINVAL;
 
-	u32 = *(uint32_t *)avp->data;
+	*u32 = *((uint32_t *)avp->data);
 	return 0;
 }
 
@@ -133,7 +138,7 @@ int avpp_val_u16(struct avps_parsed *avps, uint16_t vendor_id, uint16_t type,
 	if (avp->data_len < sizeof(*u16))
 		return -EINVAL;
 
-	u16 = *(uint16_t *)avp->data;
+	*u16 = *((uint16_t *)avp->data);
 	return 0;
 }
 
@@ -148,7 +153,7 @@ static int msgb_avp_put(struct msgb *msg, uint16_t vendor_id, uint16_t type,
 		return -1;
 	}
 
-	msgb_put_u16(msg, (data_len + 6) & 0x3ff | (m_flag ? 0x8000 : 0));
+	msgb_put_u16(msg, ((data_len + 6) & 0x3ff) | (m_flag ? 0x8000 : 0));
 	msgb_put_u16(msg, vendor_id);
 	msgb_put_u16(msg, type);
 	out = msgb_put(msg, data_len);
@@ -235,13 +240,14 @@ static int digest_avp_update(struct msgb *msg)
 
 	if (ntohs(ah->attr_type) != AVP_IETF_MSG_DIGEST ||
 	    ntohs(ah->vendor_id) != VENDOR_IETF ||
-	    ntohs(ah->m_h_length) & 0x3FF != 17) {
+	    (ntohs(ah->m_h_length) & 0x3FF) != 17) {
 		LOGP(DL2TP, LOGL_ERROR, "Missing Digest AVP, cannot update\n");
 		return -1;
 	}
 
 	if (len > msgb_l2tplen(msg)) {
-		LOGP(DL2TP, LOGL_ERROR, "");
+		/* FIXME: improve log message */
+		LOGP(DL2TP, LOGL_ERROR, "invalid length");
 		return -1;
 	}
 
@@ -275,6 +281,7 @@ static int l2tp_msgb_tx(struct msgb *msg)
 	/* FIXME: put in the queue for reliable re-transmission */
 
 	/* FIXME: actually transmit it */
+	return 0;
 }
 
 /***********************************************************************
@@ -383,6 +390,7 @@ static int rx_scc_rq(struct msgb *msg, struct avps_parsed *ap)
 {
 	struct l2tp_control_hdr *ch = msgb_l2tph(msg);
 	struct l2tpd_connection *l2cc;
+	char *host_name = NULL;
 	uint16_t pw;
 
 	/* Abort if Pseudowire capability doesn't include 6(HDLC) */
@@ -404,7 +412,7 @@ static int rx_scc_rq(struct msgb *msg, struct avps_parsed *ap)
 				 &router_id))
 			l2cc->remote.router_id = router_id;
 		/* Host Name AVP */
-		host_name = avpp_val(ap, VENDOR_IETF, AVP_IETF_HOST_NAME);
+		host_name = (char *) avpp_val(ap, VENDOR_IETF, AVP_IETF_HOST_NAME);
 		if (host_name)
 			l2cc->remote.host_name = talloc_strdup(l2cc, host_name);
 	}
@@ -418,7 +426,7 @@ static int rx_scc_rq(struct msgb *msg, struct avps_parsed *ap)
 static int rx_scc_cn(struct msgb *msg, struct avps_parsed *ap)
 {
 	struct l2tp_control_hdr *ch = msgb_l2tph(msg);
-	struct l2tpd_connection *l2cc = l2tpd_cc_find_by_l_cc_id(ch->ccid);
+	struct l2tpd_connection *l2cc = l2tpd_cc_find_by_l_cc_id(l2i, ch->ccid);
 
 	if (!l2cc)
 		return -1;
@@ -432,7 +440,7 @@ static int rx_scc_cn(struct msgb *msg, struct avps_parsed *ap)
 static int rx_stop_ccn(struct msgb *msg, struct avps_parsed *ap)
 {
 	struct l2tp_control_hdr *ch = msgb_l2tph(msg);
-	struct l2tpd_connection *l2cc = l2tpd_cc_find_by_l_cc_id(ch->ccid);
+	struct l2tpd_connection *l2cc = l2tpd_cc_find_by_l_cc_id(l2i, ch->ccid);
 
 	if (!l2cc)
 		return -1;
@@ -445,10 +453,10 @@ static int rx_stop_ccn(struct msgb *msg, struct avps_parsed *ap)
 static int rx_ic_rq(struct msgb *msg, struct avps_parsed *ap)
 {
 	struct l2tp_control_hdr *ch = msgb_l2tph(msg);
-	struct l2tpd_connection *l2cc = l2tpd_cc_find_by_l_cc_id(ch->ccid);
+	struct l2tpd_connection *l2cc = l2tpd_cc_find_by_l_cc_id(l2i, ch->ccid);
 	struct l2tpd_session *l2s;
-	uint32_t r_sess_id = avpp_val_u32(ap, VENDOR_IETF, AVP_IETF_REM_SESS_ID);
-	uint32_t l_sess_id = avpp_val_u32(ap, VENDOR_IETF, AVP_IETF_LOC_SESS_ID);
+	uint32_t r_sess_id = 0;
+	uint32_t l_sess_id = 0;
 
 	if (!l2cc)
 		return -1;
@@ -464,13 +472,13 @@ static int rx_ic_rq(struct msgb *msg, struct avps_parsed *ap)
 	} else {
 		l2s = l2tpd_sess_find_by_l_s_id(l2cc, r_sess_id);
 		if (!l2s) {
-			LOGP(DL2TPD, LOGL_ERROR, "NoSession %u\n",
+			LOGP(DL2TP, LOGL_ERROR, "NoSession %u\n",
 				r_sess_id);
 			return -1;
 		}
 	}
 
-	osmo_fsm_inst_dispatch(l2ic->fsm, L2IC_E_RX_ICRQ, msg);
+	osmo_fsm_inst_dispatch(l2cc->fsm, L2IC_E_RX_ICRQ, msg);
 	return 0;
 }
 
@@ -478,12 +486,12 @@ static int rx_ic_rq(struct msgb *msg, struct avps_parsed *ap)
 static int rx_ic_cn(struct msgb *msg, struct avps_parsed *ap)
 {
 	struct l2tp_control_hdr *ch = msgb_l2tph(msg);
-	struct l2tpd_connection *l2cc = l2tpd_cc_find_by_l_cc_id(ch->ccid);
+	struct l2tpd_connection *l2cc = l2tpd_cc_find_by_l_cc_id(l2i, ch->ccid);
 
 	if (!l2cc)
 		return -1;
 
-	osmo_fsm_inst_dispatch(l2ic->fsm, L2IC_E_RX_ICCN, msg);
+	osmo_fsm_inst_dispatch(l2cc->fsm, L2IC_E_RX_ICCN, msg);
 	return 0;
 }
 
@@ -491,12 +499,12 @@ static int rx_ic_cn(struct msgb *msg, struct avps_parsed *ap)
 static int rx_cdn(struct msgb *msg, struct avps_parsed *ap)
 {
 	struct l2tp_control_hdr *ch = msgb_l2tph(msg);
-	struct l2tpd_connection *l2cc = l2tpd_cc_find_by_l_cc_id(ch->ccid);
+	struct l2tpd_connection *l2cc = l2tpd_cc_find_by_l_cc_id(l2i, ch->ccid);
 
 	if (!l2cc)
 		return -1;
 
-	osmo_fsm_inst_dispatch(l2ic->fsm, L2IC_E_RX_CDN, msg);
+	osmo_fsm_inst_dispatch(l2cc->fsm, L2IC_E_RX_CDN, msg);
 	return 0;
 }
 
@@ -531,7 +539,7 @@ static int l2tp_rcvmsg_control_ietf(struct msgb *msg, struct avps_parsed *ap,
 static int rx_eri_tcrp(struct msgb *msg, struct avps_parsed *ap)
 {
 	struct l2tp_control_hdr *ch = msgb_l2tph(msg);
-	struct l2tpd_connection *l2cc = l2tpd_cc_find_by_l_cc_id(ch->ccid);
+	struct l2tpd_connection *l2cc = l2tpd_cc_find_by_l_cc_id(l2i, ch->ccid);
 
 	if (!l2cc)
 		return -1;
@@ -541,7 +549,7 @@ static int rx_eri_tcrp(struct msgb *msg, struct avps_parsed *ap)
 static int rx_eri_altcrp(struct msgb *msg, struct avps_parsed *ap)
 {
 	struct l2tp_control_hdr *ch = msgb_l2tph(msg);
-	struct l2tpd_connection *l2cc = l2tpd_cc_find_by_l_cc_id(ch->ccid);
+	struct l2tpd_connection *l2cc = l2tpd_cc_find_by_l_cc_id(l2i, ch->ccid);
 
 	if (!l2cc)
 		return -1;
@@ -579,7 +587,7 @@ static int l2tp_rcvmsg_control(struct msgb *msg)
 		return -1;
 	}
 
-	if (ch->ver & T_BIT|L_BIT|S_BIT != T_BIT|L_BIT|S_BIT) {
+	if ((ch->ver & (T_BIT|L_BIT|S_BIT)) != (T_BIT|L_BIT|S_BIT)) {
 		LOGP(DL2TP, LOGL_ERROR, "L2TP Bits wrong\n");
 		return -1;
 	}
@@ -620,11 +628,13 @@ static int l2tp_rcvmsg_control(struct msgb *msg)
 
 	if (first_avp->vendor_id == VENDOR_IETF &&
 	    first_avp->type == AVP_IETF_CTRL_MSG)
-		return l2tp_rcvmsg_control_ietf(msg, &ap);
+		return l2tp_rcvmsg_control_ietf(msg, &ap, msg_type);
 	else if (first_avp->vendor_id == VENDOR_ERICSSON &&
-		 firrst_avp->type == AVP_ERIC_CTRL_MSG)
-		return l2tp_rcvmsg_control_ericsson(msg, &ap);
+		 first_avp->type == AVP_ERIC_CTRL_MSG)
+		return l2tp_rcvmsg_control_ericsson(msg, &ap, msg_type);
 
+	/* FIXME: return value */
+	return -1;
 }
 
 static int l2tp_rcvmsg_data(struct msgb *msg, bool ip_transport)
@@ -635,8 +645,6 @@ static int l2tp_rcvmsg_data(struct msgb *msg, bool ip_transport)
 
 int l2tp_rcvmsg(struct msgb *msg, bool ip_transport)
 {
-	struct l2tp_control_hdr *ch;
-
 	if (ip_transport) {
 		uint32_t session = osmo_load32be(msgb_l2tph(msg));
 		if (session == 0) {
@@ -649,6 +657,7 @@ int l2tp_rcvmsg(struct msgb *msg, bool ip_transport)
 	} else {
 		LOGP(DL2TP, LOGL_ERROR, "UDP transport not supported (yet?)\n");
 		/* FIXME */
+		return -1;
 	}
 }
 
@@ -696,6 +705,7 @@ int main(int argc, char **argv)
 	struct l2tpd_instance li;
 	int rc;
 
+	l2i = &li;
 	li.cfg.bind_ip = "0.0.0.0";
 	rc = l2tpd_instance_start(&li);
 	if (rc < 0)
