@@ -10,3 +10,6 @@ l2tpd_cc_alloc(struct l2tpd_instance *inst);
 
 struct l2tpd_session *
 l2tpd_sess_alloc(struct l2tpd_connection *conn);
+
+struct l2tpd_session *
+l2tpd_sess_find_by_l_s_id(struct l2tpd_connection *conn, uint32_t session_id);
