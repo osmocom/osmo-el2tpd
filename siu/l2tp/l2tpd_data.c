@@ -4,6 +4,7 @@
 
 #include <osmocom/core/talloc.h>
 #include <osmocom/core/linuxlist.h>
+#include <osmocom/core/socket.h>
 
 #include "l2tpd.h"
 #include "l2tpd_data.h"
@@ -15,6 +16,18 @@ l2tpd_cc_find_by_l_cc_id(struct l2tpd_instance *inst, uint32_t l_cc_id)
 	struct l2tpd_connection *l2c;
 	llist_for_each_entry(l2c, &inst->connections, list) {
 		if (l2c->local.ccid == l_cc_id)
+			return l2c;
+	}
+	return NULL;
+}
+
+
+struct l2tpd_connection *
+l2tpd_cc_find_by_sockaddr(struct l2tpd_instance *inst, struct sockaddr *ss);
+{
+	struct l2tpd_connection *l2c;
+	llist_for_each_entry(l2c, &inst->connections, list) {
+		if (sockaddr_equal(ss, &l2c->remote.ss))
 			return l2c;
 	}
 	return NULL;
