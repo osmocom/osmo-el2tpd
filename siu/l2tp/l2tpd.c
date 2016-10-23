@@ -643,28 +643,21 @@ static int l2tp_rcvmsg_data(struct msgb *msg, bool ip_transport)
 	return 0;
 }
 
-int l2tp_rcvmsg(struct sockaddr *ss, struct msgb *msg, bool ip_transport)
+int l2tp_rcvmsg(struct l2tpd_connection *conn, struct msgb *msg)
 {
-	/* search first for the ip */
-	if (ip_transport) {
-		uint32_t session = osmo_load32be(msgb_l2tph(msg));
-		if (session == 0) {
-			/* strip session ID and feed to control */
-			msgb_pull(msg, sizeof(session));
-			return l2tp_rcvmsg_control(msg);
-		} else {
-			return l2tp_rcvmsg_data(msg, true);
-		}
-	} else {
-		LOGP(DL2TP, LOGL_ERROR, "UDP transport not supported (yet?)\n");
-		/* FIXME */
-		return -1;
+	uint32_t session = osmo_load32be(msgb_l2tph(msg));
+	if (session == 0) {
+		/* strip session ID and feed to control */
+		msgb_pull(msg, sizeof(session));
+		return l2tp_rcvmsg_control(msg);
 	}
+	return -1;
 }
 
 static int l2tp_ip_read_cb(struct osmo_fd *ofd, unsigned int what)
 {
 	struct msgb *msg = l2tp_msgb_alloc();
+	struct l2tpd_connection *l2c;
 	struct sockaddr ss;
 	socklen_t ss_len = sizeof(ss);
 	int rc;
@@ -679,7 +672,7 @@ static int l2tp_ip_read_cb(struct osmo_fd *ofd, unsigned int what)
 
 	/* FIXME: resolve l2tpd_connection somewhere ? */
 
-	return l2tp_rcvmsg(ss, msg, true);
+	return l2tp_rcvmsg(l2c, msg);
 }
 
 static int l2tpd_instance_start(struct l2tpd_instance *li)
