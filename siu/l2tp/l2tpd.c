@@ -633,7 +633,7 @@ static int l2tp_rcvmsg_control(struct msgb *msg)
 		 first_avp->type == AVP_ERIC_CTRL_MSG)
 		return l2tp_rcvmsg_control_ericsson(msg, &ap, msg_type);
 
-	/* FIXME: return value */
+	LOGP(DL2TP, LOGL_ERROR, "Unknown packet received.\n");
 	return -1;
 }
 

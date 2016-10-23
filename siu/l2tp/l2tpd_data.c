@@ -11,6 +11,36 @@
 #include "l2tpd_data.h"
 #include "l2tpd_fsm.h"
 
+
+/* FIXME: use libosmocore osmo_sockaddr_equal when its upstream */
+static int sockaddr_equal(const struct sockaddr *a,
+			  const struct sockaddr *b, unsigned int len)
+{
+	struct sockaddr_in *sin_a, *sin_b;
+	struct sockaddr_in6 *sin6_a, *sin6_b;
+
+	if (a->sa_family != b->sa_family)
+		return 0;
+
+	switch (a->sa_family) {
+	case AF_INET:
+		sin_a = (struct sockaddr_in *)a;
+		sin_b = (struct sockaddr_in *)b;
+		if (!memcmp(&sin_a->sin_addr, &sin_b->sin_addr,
+			    sizeof(struct in_addr)))
+			return 1;
+		break;
+	case AF_INET6:
+		sin6_a = (struct sockaddr_in6 *)a;
+		sin6_b = (struct sockaddr_in6 *)b;
+		if (!memcmp(&sin6_a->sin6_addr, &sin6_b->sin6_addr,
+			    sizeof(struct in6_addr)))
+			return 1;
+		break;
+	}
+	return 0;
+}
+
 /* Find a connection for given local control connection id */
 struct l2tpd_connection *
 l2tpd_cc_find_by_l_cc_id(struct l2tpd_instance *inst, uint32_t l_cc_id)
@@ -23,13 +53,12 @@ l2tpd_cc_find_by_l_cc_id(struct l2tpd_instance *inst, uint32_t l_cc_id)
 	return NULL;
 }
 
-
 struct l2tpd_connection *
 l2tpd_cc_find_by_sockaddr(struct l2tpd_instance *inst, struct sockaddr *ss, int ss_len)
 {
 	struct l2tpd_connection *l2c;
 	llist_for_each_entry(l2c, &inst->connections, list) {
-		if (osmo_sockaddr_equal(ss, &l2c->remote.ss, ss_len))
+		if (sockaddr_equal(ss, &l2c->remote.ss, ss_len))
 			return l2c;
 	}
 	return NULL;
