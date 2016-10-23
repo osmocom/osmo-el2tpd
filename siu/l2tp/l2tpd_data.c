@@ -23,11 +23,11 @@ l2tpd_cc_find_by_l_cc_id(struct l2tpd_instance *inst, uint32_t l_cc_id)
 
 
 struct l2tpd_connection *
-l2tpd_cc_find_by_sockaddr(struct l2tpd_instance *inst, struct sockaddr *ss);
+l2tpd_cc_find_by_sockaddr(struct l2tpd_instance *inst, struct sockaddr *ss, int ss_len)
 {
 	struct l2tpd_connection *l2c;
 	llist_for_each_entry(l2c, &inst->connections, list) {
-		if (sockaddr_equal(ss, &l2c->remote.ss))
+		if (osmo_sockaddr_equal(ss, &l2c->remote.ss, ss_len))
 			return l2c;
 	}
 	return NULL;
@@ -45,8 +45,6 @@ l2tpd_cc_alloc(struct l2tpd_instance *inst)
 
 	return l2c;
 }
-
-
 
 struct l2tpd_session *
 l2tpd_sess_alloc(struct l2tpd_connection *conn)
