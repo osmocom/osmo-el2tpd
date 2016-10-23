@@ -718,7 +718,7 @@ static const struct log_info l2tp_log_info = {
 int main(int argc, char **argv)
 {
 	int rc;
-
+	struct log_target *stderr_target;
 	void *tall_l2tp_ctx = talloc_named_const(NULL, 0, "l2tpd");
 
 	l2i = talloc_zero(tall_l2tp_ctx, struct l2tpd_instance);
@@ -729,6 +729,10 @@ int main(int argc, char **argv)
 		exit(1);
 
 	log_init(&l2tp_log_info, NULL);
+	stderr_target = log_target_create_stderr();
+	log_add_target(stderr_target);
+	log_set_print_filename(stderr_target, 0);
+
 
 	while (1) {
 		osmo_select_main(0);
