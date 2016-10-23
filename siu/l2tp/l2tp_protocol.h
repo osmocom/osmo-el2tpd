@@ -14,7 +14,7 @@ struct l2tp_control_hdr {
 
 #define T_BIT	0x8000
 #define L_BIT	0x4000
-#define S_BIT	0x1000
+#define S_BIT	0x0800
 
 #define Z_BITS	0x37F8		/* Reserved bits:  We must drop anything
 				   with these there */
