@@ -4,6 +4,8 @@ PREFIX ?= /usr/local
 CFLAGS := -I $(PREFIX)/include/ -Wno-unused-function -Wall
 LDFLAGS := -L $(PREFIX)/lib -lcrypto -losmocore -losmogsm -ltalloc
 
+CFLAGS += $(EXTRA_CFLAGS)
+
 all: l2tpd
 
 l2tpd: l2tpd.o l2tpd_fsm.o l2tpd_data.o
