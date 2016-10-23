@@ -671,12 +671,13 @@ static int l2tp_ip_read_cb(struct osmo_fd *ofd, unsigned int what)
 	msgb_put(msg, rc);
 
 	/* FIXME: resolve l2tpd_connection somewhere ? */
-	l2c = l2tpd_cc_find_by_sockaddr(l2i, ss, sizeof(*ss));
+	l2c = l2tpd_cc_find_by_sockaddr(l2i, &ss, sizeof(ss));
 	if (!l2c) {
 		/* create a new connection */
-		LOGP(DL2TP, LOGL_ERROR, "New l2tp connection: %s\n", );
+		/* FIXME: add l2tp ip address */
+		LOGP(DL2TP, LOGL_ERROR, "New l2tp connection.\n");
 		l2c = l2tpd_cc_alloc(l2i);
-		memcpy(l2c->remote.ss, &ss, sizeof(*ss));
+		memcpy(&l2c->remote.ss, &ss, sizeof(ss));
 	}
 
 	return l2tp_rcvmsg(l2c, msg);
