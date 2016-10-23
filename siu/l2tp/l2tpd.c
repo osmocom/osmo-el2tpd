@@ -395,7 +395,7 @@ static int rx_scc_rq(struct msgb *msg, struct avps_parsed *ap)
 
 	/* Abort if Pseudowire capability doesn't include 6(HDLC) */
 	if (avpp_val_u16(ap, VENDOR_IETF, AVP_IETF_PW_CAP_LIST, &pw) < 0 ||
-	    pw != 0x0006) {
+	    pw != htons(0x0006)) {
 		LOGP(DL2TP, LOGL_ERROR, "Pseudowire != HDLC\n");
 		return -1;
 	}
