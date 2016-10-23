@@ -6,7 +6,7 @@ struct sockaddr;
 
 /* l2tp connection */
 struct l2tpd_connection *
-l2tpd_cc_find_by_sockaddr(struct l2tpd_instance *inst, struct sockaddr *ss);
+l2tpd_cc_find_by_sockaddr(struct l2tpd_instance *inst, struct sockaddr *ss, int ss_len);
 
 struct l2tpd_connection *
 l2tpd_cc_find_by_l_cc_id(struct l2tpd_instance *inst, uint32_t l_cc_id);
