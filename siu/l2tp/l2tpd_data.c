@@ -65,14 +65,14 @@ l2tpd_cc_find_by_sockaddr(struct l2tpd_instance *inst, struct sockaddr *ss, int 
 }
 
 struct l2tpd_connection *
-l2tpd_cc_alloc(struct l2tpd_instance *inst)
+l2tpd_cc_alloc(struct l2tpd_instance *l2i)
 {
-	struct l2tpd_connection *l2c = talloc_zero(inst, struct l2tpd_connection);
+	struct l2tpd_connection *l2c = talloc_zero(l2i, struct l2tpd_connection);
 
 	INIT_LLIST_HEAD(&l2c->sessions);
-	l2c->local.ccid = inst->next_l_cc_id++;
+	l2c->local.ccid = l2i->next_l_cc_id++;
 
-	llist_add(&l2c->list, &inst->connections);
+	llist_add(&l2c->list, &l2i->connections);
 	l2c->fsm = osmo_fsm_inst_alloc(&l2tp_cc_fsm, l2c, NULL, LOGL_DEBUG, NULL);
 
 	return l2c;
