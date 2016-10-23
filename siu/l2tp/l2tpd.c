@@ -574,7 +574,7 @@ static int l2tp_rcvmsg_control_ericsson(struct msgb *msg, struct avps_parsed *ap
 
 static int l2tp_rcvmsg_control(struct msgb *msg)
 {
-	struct l2tp_control_hdr *ch = msgb_l2tph(msg);
+	struct l2tp_control_hdr *ch = (struct l2tp_control_hdr *) msgb_data(msg);
 	struct avps_parsed ap;
 	struct avp_parsed *first_avp;
 	uint16_t msg_type;
