@@ -208,7 +208,7 @@ static void l2tp_hdr_swap(struct l2tp_control_hdr *ch)
 
 static struct msgb *l2tp_msgb_alloc(void)
 {
-	return msgb_alloc_headroom(1500, 100, "L2TP");
+	return msgb_alloc_headroom(1600, 100, "L2TP");
 }
 
 static int msgb_avp_put_digest(struct msgb *msg)
