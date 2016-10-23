@@ -717,12 +717,14 @@ static const struct log_info l2tp_log_info = {
 
 int main(int argc, char **argv)
 {
-	struct l2tpd_instance li;
 	int rc;
 
-	l2i = &li;
-	li.cfg.bind_ip = "0.0.0.0";
-	rc = l2tpd_instance_start(&li);
+	void *tall_l2tp_ctx = talloc_named_const(NULL, 0, "l2tpd");
+
+	l2i = talloc_zero(tall_l2tp_ctx, struct l2tpd_instance);
+	l2i->cfg.bind_ip = "0.0.0.0";
+
+	rc = l2tpd_instance_start(l2i);
 	if (rc < 0)
 		exit(1);
 
