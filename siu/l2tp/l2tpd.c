@@ -721,6 +721,10 @@ int main(int argc, char **argv)
 	struct log_target *stderr_target;
 	void *tall_l2tp_ctx = talloc_named_const(NULL, 0, "l2tpd");
 
+	/* register fsms */
+	osmo_fsm_register(&l2tp_cc_fsm);
+	osmo_fsm_register(&l2tp_ic_fsm);
+
 	l2i = talloc_zero(tall_l2tp_ctx, struct l2tpd_instance);
 	l2i->cfg.bind_ip = "0.0.0.0";
 
