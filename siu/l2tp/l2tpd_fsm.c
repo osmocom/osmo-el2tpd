@@ -4,24 +4,6 @@
 
 #define S(x)	(1 << (x))
 
-enum l2tpd_ctrl_con_state {
-	/* Before we receive SCCRQ*/
-	L2CC_S_INIT,
-	/* After we sent SCCRP, waiting for SCCCN */
-	L2CC_S_WAIT_CTL_CONN,
-	/* Control Conncetion is established */
-	L2CC_S_ESTABLISHED,
-};
-
-/* ICRQ recipient */
-enum l2tpd_in_call_state {
-	/* Waiting for ICRQ */
-	L2IC_S_INIT,
-	/* Waiting for ICCN */
-	L2IC_S_WAIT_CONN,
-	L2IC_S_ESTABLISHED,
-};
-
 static void l2tp_ctrl_s_init(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	/* FIXME: Send SCCRP */
@@ -83,16 +65,13 @@ static const struct osmo_fsm_state l2tp_ctrl_states[] = {
 	},
 };
 
-static struct osmo_fsm l2tp_cc_fsm = {
+struct osmo_fsm l2tp_cc_fsm = {
 	.name = "L2TP-CC",
 	.states = l2tp_ctrl_states,
 	.num_states = ARRAY_SIZE(l2tp_ctrl_states),
 	.log_subsys = 0,
 	.event_names = l2tp_cc_events,
 };
-
-
-
 
 static void l2tp_ic_s_init(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
@@ -156,7 +135,7 @@ static const struct osmo_fsm_state l2tp_ic_states[] = {
 	},
 };
 
-static struct osmo_fsm l2tp_ic_fsm = {
+struct osmo_fsm l2tp_ic_fsm = {
 	.name = "L2TP-IC",
 	.states = l2tp_ic_states,
 	.num_states = ARRAY_SIZE(l2tp_ic_states),

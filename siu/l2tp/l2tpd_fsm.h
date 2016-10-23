@@ -35,4 +35,23 @@ enum l2tpd_in_call_event {
 	L2IC_E_LOCAL_CLOSE_REQ,
 };
 
+enum l2tpd_ctrl_con_state {
+	/* Before we receive SCCRQ*/
+	L2CC_S_INIT,
+	/* After we sent SCCRP, waiting for SCCCN */
+	L2CC_S_WAIT_CTL_CONN,
+	/* Control Conncetion is established */
+	L2CC_S_ESTABLISHED,
+};
 
+/* ICRQ recipient */
+enum l2tpd_in_call_state {
+	/* Waiting for ICRQ */
+	L2IC_S_INIT,
+	/* Waiting for ICCN */
+	L2IC_S_WAIT_CONN,
+	L2IC_S_ESTABLISHED,
+};
+
+extern struct osmo_fsm l2tp_ic_fsm;
+extern struct osmo_fsm l2tp_cc_fsm;
