@@ -40,7 +40,7 @@ struct l2tpd_instance *l2i;
 static int msgb_avp_parse(struct avp_parsed *ap, struct msgb *msg, int offset)
 {
 	uint32_t msgb_left = msgb_length(msg) - offset;
-	struct l2tp_avp_hdr *ah = (struct l2tp_avp_hdr *) msg->data + offset;
+	struct l2tp_avp_hdr *ah = (struct l2tp_avp_hdr *) (msgb_data(msg) + offset);
 	uint16_t avp_len;
 
 	if (sizeof(*ah) > msgb_left) {
@@ -52,7 +52,7 @@ static int msgb_avp_parse(struct avp_parsed *ap, struct msgb *msg, int offset)
 		LOGP(DL2TP, LOGL_NOTICE, "AVP Parse: AVP len < 6\n");
 		return -1;
 	}
-	if (sizeof(*ah) + avp_len > msgb_left) {
+	if (avp_len > msgb_left) {
 		LOGP(DL2TP, LOGL_NOTICE, "AVP Data beyond end of msgb\n");
 		return -1;
 	}
