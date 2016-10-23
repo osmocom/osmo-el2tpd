@@ -701,6 +701,19 @@ static int l2tpd_instance_start(struct l2tpd_instance *li)
 	return 0;
 }
 
+/* default categories */
+static struct log_info_cat l2tp_categories[] = {
+	[DL2TP] = {
+		.name = "DL2TP",
+		.description = "L2TP logging messages",
+		.enabled = 1, .loglevel = LOGL_DEBUG,
+	},
+};
+
+static const struct log_info l2tp_log_info = {
+	.cat = l2tp_categories,
+	.num_cat = ARRAY_SIZE(l2tp_categories),
+};
 
 int main(int argc, char **argv)
 {
@@ -712,6 +725,8 @@ int main(int argc, char **argv)
 	rc = l2tpd_instance_start(&li);
 	if (rc < 0)
 		exit(1);
+
+	log_init(&l2tp_log_info, NULL);
 
 	while (1) {
 		osmo_select_main(0);
