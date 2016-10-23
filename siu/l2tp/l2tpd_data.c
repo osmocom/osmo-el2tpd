@@ -5,9 +5,11 @@
 #include <osmocom/core/talloc.h>
 #include <osmocom/core/linuxlist.h>
 #include <osmocom/core/socket.h>
+#include <osmocom/core/fsm.h>
 
 #include "l2tpd.h"
 #include "l2tpd_data.h"
+#include "l2tpd_fsm.h"
 
 /* Find a connection for given local control connection id */
 struct l2tpd_connection *
@@ -42,6 +44,7 @@ l2tpd_cc_alloc(struct l2tpd_instance *inst)
 	l2c->local.ccid = inst->next_l_cc_id++;
 
 	llist_add(&l2c->list, &inst->connections);
+	l2c->fsm = osmo_fsm_inst_alloc(l2tp_cc_fsm, l2c, NULL, LOGL_DEBUG, NULL);
 
 	return l2c;
 }
