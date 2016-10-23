@@ -663,12 +663,16 @@ static int l2tp_ip_read_cb(struct osmo_fd *ofd, unsigned int what)
 	int rc;
 
 	/* actually read the message from the raw IP socket */
-	msg->l2h = msg->data;
-	rc = recvfrom(ofd->fd, msgb_l2tph(msg), msgb_l2tplen(msg), 0,
+	rc = recvfrom(ofd->fd, msg->data, msg->data_len, 0,
 			(struct sockaddr *) &ss, &ss_len);
 	if (rc < 0)
 		return rc;
 	msgb_put(msg, rc);
+	msg->l1h = msg->data; /* l1h = ip header */
+
+	msgb_pull(msg, 20); /* IPv4 header. FIXME: Should depend on the family */
+	msg->l2h = msg->data;
+
 
 	/* FIXME: resolve l2tpd_connection somewhere ? */
 	l2c = l2tpd_cc_find_by_sockaddr(l2i, &ss, sizeof(ss));
