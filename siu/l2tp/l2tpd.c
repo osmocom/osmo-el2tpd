@@ -643,8 +643,9 @@ static int l2tp_rcvmsg_data(struct msgb *msg, bool ip_transport)
 	return 0;
 }
 
-int l2tp_rcvmsg(struct msgb *msg, bool ip_transport)
+int l2tp_rcvmsg(struct sockaddr *ss, struct msgb *msg, bool ip_transport)
 {
+	/* search first for the ip */
 	if (ip_transport) {
 		uint32_t session = osmo_load32be(msgb_l2tph(msg));
 		if (session == 0) {
@@ -664,21 +665,21 @@ int l2tp_rcvmsg(struct msgb *msg, bool ip_transport)
 static int l2tp_ip_read_cb(struct osmo_fd *ofd, unsigned int what)
 {
 	struct msgb *msg = l2tp_msgb_alloc();
-	struct sockaddr_in sin;
-	socklen_t sin_len = sizeof(sin);
+	struct sockaddr ss;
+	socklen_t ss_len = sizeof(ss);
 	int rc;
 
 	/* actually read the message from the raw IP socket */
 	msg->l2h = msg->data;
 	rc = recvfrom(ofd->fd, msgb_l2tph(msg), msgb_l2tplen(msg), 0,
-			(struct sockaddr *) &sin, &sin_len);
+			(struct sockaddr *) &ss, &ss_len);
 	if (rc < 0)
 		return rc;
 	msgb_put(msg, rc);
 
 	/* FIXME: resolve l2tpd_connection somewhere ? */
 
-	return l2tp_rcvmsg(msg, true);
+	return l2tp_rcvmsg(ss, msg, true);
 }
 
 static int l2tpd_instance_start(struct l2tpd_instance *li)

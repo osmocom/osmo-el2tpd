@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+#include <arpa/inet.h>
+
 #include <osmocom/core/linuxlist.h>
 #include <osmocom/core/logging.h>
 #include <osmocom/core/msgb.h>
@@ -19,6 +21,7 @@ static inline unsigned int msgb_l2tplen(const struct msgb *msg)
 
 /* identifiers of a peer on a L2TP connection */
 struct l2tpd_peer {
+	struct sockaddr ss;
 	char *host_name;
 	uint32_t router_id;
 	/* Control Connection ID */
