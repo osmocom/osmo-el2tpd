@@ -447,6 +447,7 @@ static int rx_scc_rq(struct l2tpd_connection *l2c, struct msgb *msg, struct avps
 			l2c->remote.host_name = talloc_strdup(l2c, host_name);
 		memcpy(&l2c->remote.ss, sockaddr, sizeof(*sockaddr));
 		l2c->next_rx_seq_nr = 1;
+		LOGP(DL2TP, LOGL_INFO, "Allocated CC: local %d remote %d\n", l2c->local.ccid, l2c->remote.ccid);
 	} else {
 		LOGP(DL2TP, LOGL_ERROR, "Received a SCCRQ with control id != 0: %d\n", ch->ccid);
 		return -1;
