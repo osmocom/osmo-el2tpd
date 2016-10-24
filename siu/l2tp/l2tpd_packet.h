@@ -1,6 +1,15 @@
 #pragma once
 
 struct msgb;
+struct l2tpd_connection;
+struct l2tpd_session;
+
+int l2tp_tx_scc_rp(struct l2tpd_connection *lc);
+int l2tp_tx_tc_rq(struct l2tpd_session *ls);
+int l2tp_tx_altc_rq(struct l2tpd_session *ls);
+int l2tp_tx_ic_rp(struct l2tpd_session *ls);
+int l2tp_tx_ack(struct l2tpd_session *ls);
+int l2tp_tx_hello(struct l2tpd_session *ls);
 
 int l2tp_rcvmsg(struct msgb *msg);
 
