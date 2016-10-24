@@ -93,6 +93,8 @@ int main(int argc, char **argv)
 
 	l2i = talloc_zero(tall_l2tp_ctx, struct l2tpd_instance);
 	l2i->cfg.bind_ip = "0.0.0.0";
+	/* important must not 0 */
+	l2i->next_l_cc_id = 1;
 
 	rc = l2tpd_instance_start(l2i);
 	if (rc < 0)
