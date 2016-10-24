@@ -229,7 +229,7 @@ static const uint8_t digest_key[] = {
 /* update the message digest inside the AVP of a message */
 static int digest_avp_update(struct msgb *msg)
 {
-	struct l2tp_control_hdr *l2h = msgb_l2tph(msg);
+	struct l2tp_control_hdr *l2h = (struct l2tp_control_hdr *) msgb_data(msg);
 	struct l2tp_avp_hdr *ah = (struct l2tp_avp_hdr *) ((uint8_t *)l2h + sizeof(*l2h));
 	uint8_t *hmac_res;
 	unsigned int len = ntohs(l2h->length);
@@ -245,7 +245,7 @@ static int digest_avp_update(struct msgb *msg)
 		return -1;
 	}
 
-	if (len > msgb_l2tplen(msg)) {
+	if (len > msgb_length(msg)) {
 		/* FIXME: improve log message */
 		LOGP(DL2TP, LOGL_ERROR, "invalid length");
 		return -1;
