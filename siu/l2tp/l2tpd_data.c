@@ -73,7 +73,7 @@ l2tpd_cc_alloc(struct l2tpd_instance *l2i)
 	l2c->local.ccid = l2i->next_l_cc_id++;
 
 	llist_add(&l2c->list, &l2i->connections);
-	l2c->fsm = osmo_fsm_inst_alloc(&l2tp_cc_fsm, l2c, NULL, LOGL_DEBUG, NULL);
+	l2c->fsm = osmo_fsm_inst_alloc(&l2tp_cc_fsm, l2c, l2c, LOGL_DEBUG, NULL);
 
 	return l2c;
 }
