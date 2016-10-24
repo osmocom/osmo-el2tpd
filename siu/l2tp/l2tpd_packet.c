@@ -269,16 +269,22 @@ static int l2tp_msgb_tx(struct msgb *msg)
 	struct l2tpd_connection *l2c = msg->dst;
 	struct l2tp_control_hdr *l2h;
 	int ret;
+	uint32_t *session_id;
 
 	/* first prepend the L2TP control header */
 	l2h = (struct l2tp_control_hdr *) msgb_push(msg, sizeof(*l2h));
-	l2h->ver = htons(T_BIT|L_BIT|S_BIT| msgb_l2tplen(msg));
+	l2h->ver = htons(T_BIT|L_BIT|S_BIT| 0x3);
+	l2h->length = htons(msgb_length(msg));
 	l2h->ccid = htonl(l2c->remote.ccid);
 	l2h->Ns = htons(l2c->next_tx_seq_nr++);
 	l2h->Nr = htons(l2c->next_rx_seq_nr);
 
 	/* then insert/patch the message digest AVP */
 	digest_avp_update(msg);
+
+	/* push session id */
+	session_id = (uint32_t *) msgb_push(msg, 4);
+	*session_id = 0;
 
 	/* FIXME: put in the queue for reliable re-transmission */
 
