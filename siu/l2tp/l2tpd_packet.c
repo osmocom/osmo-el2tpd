@@ -288,7 +288,7 @@ static int l2tp_msgb_tx(struct msgb *msg)
 
 	/* FIXME: put in the queue for reliable re-transmission */
 
-	ret = sendto(l2i->l2tp_ofd.fd, msgb_l2tph(msg), msgb_l2tplen(msg), 0, &l2c->remote.ss, sizeof(l2c->remote.ss));
+	ret = sendto(l2i->l2tp_ofd.fd, msgb_data(msg), msgb_length(msg), 0, &l2c->remote.ss, sizeof(l2c->remote.ss));
 	if (ret < 0)
 		return ret;
 	return 0;
