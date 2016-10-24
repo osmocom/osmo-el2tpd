@@ -237,10 +237,11 @@ static int digest_avp_update(struct msgb *msg)
 	/* Digest AVP header is guaranteed to be the second AVP in a
 	 * control message.  First AVP is message type AVP with overall
 	 * length of 8 bytes */
+	ah = (struct l2tp_avp_hdr *) ((uint8_t *) ah + 8);
 
 	if (ntohs(ah->attr_type) != AVP_IETF_MSG_DIGEST ||
 	    ntohs(ah->vendor_id) != VENDOR_IETF ||
-	    (ntohs(ah->m_h_length) & 0x3FF) != 17) {
+	    (ntohs(ah->m_h_length) & 0x3FF) != 23) {
 		LOGP(DL2TP, LOGL_ERROR, "Missing Digest AVP, cannot update\n");
 		return -1;
 	}
