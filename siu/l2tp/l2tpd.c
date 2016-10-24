@@ -48,6 +48,7 @@ static int l2tp_ip_read_cb(struct osmo_fd *ofd, unsigned int what)
 static int l2tpd_instance_start(struct l2tpd_instance *li)
 {
 	int rc;
+	uint8_t dscp = 0xb8;
 
 	INIT_LLIST_HEAD(&li->connections);
 
@@ -59,6 +60,9 @@ static int l2tpd_instance_start(struct l2tpd_instance *li)
 				IPPROTO_L2TP, li->cfg.bind_ip, 0, 0);
 	if (rc < 0)
 		return rc;
+
+	setsockopt(li->l2tp_ofd.fd, IPPROTO_IP, IP_TOS,
+		    &dscp, sizeof(dscp));
 
 	return 0;
 }
