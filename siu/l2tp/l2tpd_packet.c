@@ -417,10 +417,9 @@ int l2tp_tx_hello(struct l2tpd_session *l2s)
 }
 
 /* Incoming "Start Control-Connection Request" from SIU */
-static int rx_scc_rq(struct msgb *msg, struct avps_parsed *ap)
+static int rx_scc_rq(struct l2tpd_connection *l2c, struct msgb *msg, struct avps_parsed *ap)
 {
 	struct l2tp_control_hdr *ch = (struct l2tp_control_hdr *) msgb_data(msg);
-	struct l2tpd_connection *l2cc;
 	struct sockaddr *sockaddr = msg->dst;
 	char *host_name = NULL;
 	uint16_t pw;
@@ -434,36 +433,33 @@ static int rx_scc_rq(struct msgb *msg, struct avps_parsed *ap)
 
 	if (ch->ccid == 0) {
 		uint32_t remote_ccid, router_id;
-		l2cc = l2tpd_cc_alloc(l2i);
+		l2c = l2tpd_cc_alloc(l2i, local_cid);
 		/* Get Assigned CCID and store in l2cc->remote.ccid */
 		avpp_val_u32(ap, VENDOR_IETF, AVP_IETF_AS_CTRL_CON_ID,
 			     &remote_ccid);
-		l2cc->remote.ccid = remote_ccid;
+		l2c->remote.ccid = remote_ccid;
 		/* Router ID AVP */
 		if (avpp_val_u32(ap, VENDOR_IETF, AVP_IETF_ROUTER_ID,
 				 &router_id))
-			l2cc->remote.router_id = router_id;
+			l2c->remote.router_id = router_id;
 		/* Host Name AVP */
 		host_name = (char *) avpp_val(ap, VENDOR_IETF, AVP_IETF_HOST_NAME);
 		if (host_name)
-			l2cc->remote.host_name = talloc_strdup(l2cc, host_name);
-		memcpy(&l2cc->remote.ss, sockaddr, sizeof(*sockaddr));
-		l2cc->next_rx_seq_nr = 1;
+			l2c->remote.host_name = talloc_strdup(l2c, host_name);
+		memcpy(&l2c->remote.ss, sockaddr, sizeof(*sockaddr));
+		l2c->next_rx_seq_nr = 1;
 	} else {
 		LOGP(DL2TP, LOGL_ERROR, "Received a SCCRQ with control id != 0: %d\n", ch->ccid);
 		return -1;
 	}
 
-	osmo_fsm_inst_dispatch(l2cc->fsm, L2CC_E_RX_SCCRQ, msg);
+	osmo_fsm_inst_dispatch(l2c->fsm, L2CC_E_RX_SCCRQ, msg);
 	return 0;
 }
 
 /* Incoming "Start Control-Connection Connected" from SIU */
-static int rx_scc_cn(struct msgb *msg, struct avps_parsed *ap)
+static int rx_scc_cn(struct l2tpd_connection *l2cc, struct msgb *msg, struct avps_parsed *ap)
 {
-	struct l2tp_control_hdr *ch = msgb_l2tph(msg);
-	struct l2tpd_connection *l2cc = l2tpd_cc_find_by_l_cc_id(l2i, ch->ccid);
-
 	if (!l2cc)
 		return -1;
 
@@ -473,11 +469,8 @@ static int rx_scc_cn(struct msgb *msg, struct avps_parsed *ap)
 }
 
 /* Incoming "Stop Control-Connection Notificiation" from SIU */
-static int rx_stop_ccn(struct msgb *msg, struct avps_parsed *ap)
+static int rx_stop_ccn(struct l2tpd_connection *l2cc, struct msgb *msg, struct avps_parsed *ap)
 {
-	struct l2tp_control_hdr *ch = msgb_l2tph(msg);
-	struct l2tpd_connection *l2cc = l2tpd_cc_find_by_l_cc_id(l2i, ch->ccid);
-
 	if (!l2cc)
 		return -1;
 
@@ -486,10 +479,8 @@ static int rx_stop_ccn(struct msgb *msg, struct avps_parsed *ap)
 }
 
 /* Incoming "Incoming Call Request" from SIU */
-static int rx_ic_rq(struct msgb *msg, struct avps_parsed *ap)
+static int rx_ic_rq(struct l2tpd_connection *l2cc, struct msgb *msg, struct avps_parsed *ap)
 {
-	struct l2tp_control_hdr *ch = msgb_l2tph(msg);
-	struct l2tpd_connection *l2cc = l2tpd_cc_find_by_l_cc_id(l2i, ch->ccid);
 	struct l2tpd_session *l2s;
 	uint32_t r_sess_id = 0;
 	uint32_t l_sess_id = 0;
@@ -519,11 +510,8 @@ static int rx_ic_rq(struct msgb *msg, struct avps_parsed *ap)
 }
 
 /* Incoming "Incoming Call Connected" from SIU */
-static int rx_ic_cn(struct msgb *msg, struct avps_parsed *ap)
+static int rx_ic_cn(struct l2tpd_connection *l2cc, struct msgb *msg, struct avps_parsed *ap)
 {
-	struct l2tp_control_hdr *ch = msgb_l2tph(msg);
-	struct l2tpd_connection *l2cc = l2tpd_cc_find_by_l_cc_id(l2i, ch->ccid);
-
 	if (!l2cc)
 		return -1;
 
@@ -532,11 +520,8 @@ static int rx_ic_cn(struct msgb *msg, struct avps_parsed *ap)
 }
 
 /* Incoming "Incoming Call Connected" from SIU */
-static int rx_cdn(struct msgb *msg, struct avps_parsed *ap)
+static int rx_cdn(struct l2tpd_connection *l2cc, struct msgb *msg, struct avps_parsed *ap)
 {
-	struct l2tp_control_hdr *ch = msgb_l2tph(msg);
-	struct l2tpd_connection *l2cc = l2tpd_cc_find_by_l_cc_id(l2i, ch->ccid);
-
 	if (!l2cc)
 		return -1;
 
@@ -545,22 +530,23 @@ static int rx_cdn(struct msgb *msg, struct avps_parsed *ap)
 }
 
 /* Receive an IETF specified control message */
-static int l2tp_rcvmsg_control_ietf(struct msgb *msg, struct avps_parsed *ap,
+static int l2tp_rcvmsg_control_ietf(struct l2tpd_connection *l2c,
+				    struct msgb *msg, struct avps_parsed *ap,
 				    uint16_t msg_type)
 {
 	switch (msg_type) {
 	case IETF_CTRLMSG_SCCRQ:
-		return rx_scc_rq(msg, ap);
+		return rx_scc_rq(l2c, msg, ap);
 	case IETF_CTRLMSG_SCCCN:
-		return rx_scc_cn(msg, ap);
+		return rx_scc_cn(l2c, msg, ap);
 	case IETF_CTRLMSG_STOPCCN:
-		return rx_stop_ccn(msg, ap);
+		return rx_stop_ccn(l2c, msg, ap);
 	case IETF_CTRLMSG_ICRQ:
-		return rx_ic_rq(msg, ap);
+		return rx_ic_rq(l2c, msg, ap);
 	case IETF_CTRLMSG_ICCN:
-		return rx_ic_cn(msg, ap);
+		return rx_ic_cn(l2c, msg, ap);
 	case IETF_CTRLMSG_CDN:
-		return rx_cdn(msg, ap);
+		return rx_cdn(l2c, msg, ap);
 	default:
 		LOGP(DL2TP, LOGL_ERROR, "Unknown/Unhandled IETF Control "
 			"Message Type 0x%04x\n", msg_type);
@@ -593,7 +579,8 @@ static int rx_eri_altcrp(struct msgb *msg, struct avps_parsed *ap)
 }
 
 /* Receive an Ericsson specific control message */
-static int l2tp_rcvmsg_control_ericsson(struct msgb *msg, struct avps_parsed *ap,
+static int l2tp_rcvmsg_control_ericsson(struct l2tpd_connection *l2c,
+					struct msgb *msg, struct avps_parsed *ap,
 					uint16_t msg_type)
 {
 	switch (msg_type) {
@@ -611,6 +598,7 @@ static int l2tp_rcvmsg_control_ericsson(struct msgb *msg, struct avps_parsed *ap
 static int l2tp_rcvmsg_control(struct msgb *msg)
 {
 	struct l2tp_control_hdr *ch = (struct l2tp_control_hdr *) msgb_data(msg);
+	struct l2tpd_connection *l2c = NULL;
 	struct avps_parsed ap;
 	struct avp_parsed *first_avp;
 	uint16_t msg_type;
@@ -638,11 +626,6 @@ static int l2tp_rcvmsg_control(struct msgb *msg)
 		return -1;
 	}
 
-	if (ch->ccid != 0) {
-		LOGP(DL2TP, LOGL_ERROR, "Control Message for CCID != 0\n");
-		return -1;
-	}
-
 	/* Parse the first AVP an see if it is Control Message */
 	rc = msgb_avps_parse(&ap, msg, sizeof(*ch));
 	if (rc < 0) {
@@ -663,13 +646,27 @@ static int l2tp_rcvmsg_control(struct msgb *msg)
 	msg_type = osmo_load16be(first_avp->data);
 
 	/* FIXME: we need to get the l2c here to count the rx */
+	if (ch->ccid != 0) {
+		/* lookup control connection */
+		l2c = l2tpd_cc_find_by_l_cc_id(l2i, ch->ccid);
+		if (!l2c) {
+			LOGP(DL2TP, LOGL_ERROR, "l2tp: can not find a connection for ccid %d\n", ch->ccid);
+			return -1;
+		}
+
+		/* FIXME: do real seq numbering. check if already received etc. */
+		if (l2c->next_rx_seq_nr < (ch->Ns + 1))
+			l2c->next_rx_seq_nr =  ch->Ns + 1;
+		if (l2c->next_tx_seq_nr != ch->Nr)
+			LOGP(DL2TP, LOGL_ERROR, "l2tp: wrong seq number received. expectd %d != recveived %d.\n", l2c->next_tx_seq_nr, ch->Ns);
+	}
 
 	if (first_avp->vendor_id == VENDOR_IETF &&
 	    first_avp->type == AVP_IETF_CTRL_MSG)
-		return l2tp_rcvmsg_control_ietf(msg, &ap, msg_type);
+		return l2tp_rcvmsg_control_ietf(l2c, msg, &ap, msg_type);
 	else if (first_avp->vendor_id == VENDOR_ERICSSON &&
 		 first_avp->type == AVP_ERIC_CTRL_MSG)
-		return l2tp_rcvmsg_control_ericsson(msg, &ap, msg_type);
+		return l2tp_rcvmsg_control_ericsson(l2c, msg, &ap, msg_type);
 
 	LOGP(DL2TP, LOGL_ERROR, "Unknown packet received.\n");
 	return -1;
