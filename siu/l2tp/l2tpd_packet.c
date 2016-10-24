@@ -432,7 +432,7 @@ static int rx_scc_rq(struct l2tpd_connection *l2c, struct msgb *msg, struct avps
 
 	if (ch->ccid == 0) {
 		uint32_t remote_ccid, router_id;
-		l2c = l2tpd_cc_alloc(l2i, local_cid);
+		l2c = l2tpd_cc_alloc(l2i);
 		/* Get Assigned CCID and store in l2cc->remote.ccid */
 		avpp_val_u32(ap, VENDOR_IETF, AVP_IETF_AS_CTRL_CON_ID,
 			     &remote_ccid);
