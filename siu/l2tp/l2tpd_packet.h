@@ -8,7 +8,7 @@ int l2tp_tx_scc_rp(struct l2tpd_connection *l2c);
 int l2tp_tx_tc_rq(struct l2tpd_session *l2s);
 int l2tp_tx_altc_rq(struct l2tpd_session *l2s);
 int l2tp_tx_ic_rp(struct l2tpd_session *l2s);
-int l2tp_tx_ack(struct l2tpd_session *l2s);
+int l2tp_tx_ack(struct l2tpd_connection *l2c);
 int l2tp_tx_hello(struct l2tpd_session *l2s);
 
 int l2tp_rcvmsg(struct msgb *msg);

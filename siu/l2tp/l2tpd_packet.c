@@ -390,11 +390,10 @@ int l2tp_tx_ic_rp(struct l2tpd_session *l2s)
 	return l2tp_msgb_tx(msg);
 }
 
-int l2tp_tx_ack(struct l2tpd_session *l2s)
+int l2tp_tx_ack(struct l2tpd_connection *l2c)
 {
 	struct msgb *msg = l2tp_msgb_alloc();
 	/* FIXME: use pointer instead of this call */
-	struct l2tpd_connection *l2c = l2tpd_cc_find_by_l_cc_id(l2i, l2s->l_sess_id);
 
 	msgb_avp_put_msgt(msg, VENDOR_IETF, IETF_CTRLMSG_ACK);
 	msgb_avp_put_digest(msg);
