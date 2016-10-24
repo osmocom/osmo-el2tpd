@@ -306,12 +306,15 @@ int l2tp_tx_scc_rp(struct l2tpd_connection *l2c)
 	msgb_avp_put_u16(msg, VENDOR_IETF, AVP_IETF_PW_CAP_LIST,
 			 0x0006, true);
 
+	msg->dst = l2c;
 	return l2tp_msgb_tx(msg);
 }
 
 int l2tp_tx_tc_rq(struct l2tpd_session *l2s)
 {
 	struct msgb *msg = l2tp_msgb_alloc();
+	/* FIXME: use pointer instead of this call */
+	struct l2tpd_connection *l2c = l2tpd_cc_find_by_l_cc_id(l2i, l2s->l_sess_id);
 	const uint8_t tcg[] = { 0x00, 0x19, 0x01, 0x1f, 0x05,
 				0, 10, 11, 12, 62, /* SAPIs */
 				10, 251, 134, 1, /* IP */
@@ -322,12 +325,15 @@ int l2tp_tx_tc_rq(struct l2tpd_session *l2s)
 	msgb_avp_put(msg, VENDOR_ERICSSON, AVP_ERIC_TRANSP_CFG,
 			tcg, sizeof(tcg), true);
 
+	msg->dst = l2c;
 	return l2tp_msgb_tx(msg);
 }
 
 int l2tp_tx_altc_rq(struct l2tpd_session *l2s)
 {
 	struct msgb *msg = l2tp_msgb_alloc();
+	/* FIXME: use pointer instead of this call */
+	struct l2tpd_connection *l2c = l2tpd_cc_find_by_l_cc_id(l2i, l2s->l_sess_id);
 	const uint8_t tcsc[] = { 2,
 				0, 0, 0,
 				62, 62, 0 };
@@ -337,12 +343,15 @@ int l2tp_tx_altc_rq(struct l2tpd_session *l2s)
 	msgb_avp_put(msg, VENDOR_ERICSSON, AVP_ERIC_TEI_TO_SC_MAP,
 			tcsc, sizeof(tcsc), true);
 
+	msg->dst = l2c;
 	return l2tp_msgb_tx(msg);
 }
 
 int l2tp_tx_ic_rp(struct l2tpd_session *l2s)
 {
 	struct msgb *msg = l2tp_msgb_alloc();
+	/* FIXME: use pointer instead of this call */
+	struct l2tpd_connection *l2c = l2tpd_cc_find_by_l_cc_id(l2i, l2s->l_sess_id);
 
 	msgb_avp_put_msgt(msg, VENDOR_IETF, IETF_CTRLMSG_ICRP);
 	msgb_avp_put_digest(msg);
@@ -360,26 +369,33 @@ int l2tp_tx_ic_rp(struct l2tpd_session *l2s)
 	msgb_avp_put_u16(msg, VENDOR_IETF, AVP_IETF_DATA_SEQUENCING,
 			 0x0002, true);
 
+	msg->dst = l2c;
 	return l2tp_msgb_tx(msg);
 }
 
 int l2tp_tx_ack(struct l2tpd_session *l2s)
 {
 	struct msgb *msg = l2tp_msgb_alloc();
+	/* FIXME: use pointer instead of this call */
+	struct l2tpd_connection *l2c = l2tpd_cc_find_by_l_cc_id(l2i, l2s->l_sess_id);
 
 	msgb_avp_put_msgt(msg, VENDOR_IETF, IETF_CTRLMSG_ACK);
 	msgb_avp_put_digest(msg);
 
+	msg->dst = l2c;
 	return l2tp_msgb_tx(msg);
 }
 
 int l2tp_tx_hello(struct l2tpd_session *l2s)
 {
 	struct msgb *msg = l2tp_msgb_alloc();
+	/* FIXME: use pointer instead of this call */
+	struct l2tpd_connection *l2c = l2tpd_cc_find_by_l_cc_id(l2i, l2s->l_sess_id);
 
 	msgb_avp_put_msgt(msg, VENDOR_IETF, IETF_CTRLMSG_HELLO);
 	msgb_avp_put_digest(msg);
 
+	msg->dst = l2c;
 	return l2tp_msgb_tx(msg);
 }
 
