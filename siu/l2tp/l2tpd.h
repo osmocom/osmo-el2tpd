@@ -83,3 +83,5 @@ struct l2tpd_instance {
 enum {
 	DL2TP,
 };
+
+extern struct l2tpd_instance *l2i;
