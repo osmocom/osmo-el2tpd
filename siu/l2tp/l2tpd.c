@@ -648,7 +648,7 @@ static int l2tp_rcvmsg_data(struct msgb *msg, bool ip_transport)
 	return 0;
 }
 
-int l2tp_rcvmsg(struct l2tpd_connection *conn, struct msgb *msg)
+int l2tp_rcvmsg(struct msgb *msg)
 {
 	uint32_t session = osmo_load32be(msgb_l2tph(msg));
 	if (session == 0) {
