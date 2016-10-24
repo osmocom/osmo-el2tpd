@@ -123,6 +123,7 @@ int avpp_val_u32(struct avps_parsed *avps, uint16_t vendor_id, uint16_t type,
 		return -EINVAL;
 
 	*u32 = *((uint32_t *)avp->data);
+	*u32 = htonl(*u32);
 	return 0;
 }
 
@@ -136,6 +137,7 @@ int avpp_val_u16(struct avps_parsed *avps, uint16_t vendor_id, uint16_t type,
 		return -EINVAL;
 
 	*u16 = *((uint16_t *)avp->data);
+	*u16 = htons(*u16);
 	return 0;
 }
 
@@ -422,7 +424,7 @@ static int rx_scc_rq(struct msgb *msg, struct avps_parsed *ap)
 
 	/* Abort if Pseudowire capability doesn't include 6(HDLC) */
 	if (avpp_val_u16(ap, VENDOR_IETF, AVP_IETF_PW_CAP_LIST, &pw) < 0 ||
-	    pw != htons(0x0006)) {
+	    pw != 0x0006) {
 		LOGP(DL2TP, LOGL_ERROR, "Pseudowire != HDLC\n");
 		return -1;
 	}
