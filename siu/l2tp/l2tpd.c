@@ -391,6 +391,7 @@ static int rx_scc_rq(struct msgb *msg, struct avps_parsed *ap)
 {
 	struct l2tp_control_hdr *ch = (struct l2tp_control_hdr *) msgb_data(msg);
 	struct l2tpd_connection *l2cc;
+	struct sockaddr *sockaddr = msg->dst;
 	char *host_name = NULL;
 	uint16_t pw;
 
@@ -416,8 +417,11 @@ static int rx_scc_rq(struct msgb *msg, struct avps_parsed *ap)
 		host_name = (char *) avpp_val(ap, VENDOR_IETF, AVP_IETF_HOST_NAME);
 		if (host_name)
 			l2cc->remote.host_name = talloc_strdup(l2cc, host_name);
+		memcpy(&l2cc->remote.ss, sockaddr, sizeof(*sockaddr));
+	} else {
+		LOGP(DL2TP, LOGL_ERROR, "Received a SCCRQ with control id != 0: %d\n", ch->ccid);
+		return -1;
 	}
-	/* FIXME: start fsm first! */
 
 	osmo_fsm_inst_dispatch(l2cc->fsm, L2CC_E_RX_SCCRQ, msg);
 	return 0;
@@ -673,6 +677,7 @@ static int l2tp_ip_read_cb(struct osmo_fd *ofd, unsigned int what)
 
 	msgb_pull(msg, 20); /* IPv4 header. FIXME: Should depend on the family */
 	msg->l2h = msg->data;
+	msg->dst = &ss;
 
 
 	/* FIXME: resolve l2tpd_connection somewhere ? */
