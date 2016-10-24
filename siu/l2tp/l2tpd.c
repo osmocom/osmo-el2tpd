@@ -267,6 +267,7 @@ static int l2tp_msgb_tx(struct msgb *msg)
 {
 	struct l2tpd_connection *l2c = msg->dst;
 	struct l2tp_control_hdr *l2h;
+	int ret;
 
 	/* first prepend the L2TP control header */
 	l2h = (struct l2tp_control_hdr *) msgb_push(msg, sizeof(*l2h));
@@ -280,8 +281,8 @@ static int l2tp_msgb_tx(struct msgb *msg)
 
 	/* FIXME: put in the queue for reliable re-transmission */
 
-	/* FIXME: actually transmit it */
-	return 0;
+	ret = sendto(l2i->l2tp_ofd.fd, msgb_l2tph(msg), msgb_l2tplen(msg), 0, &l2c->remote.ss, sizeof(l2c->remote.ss));
+	return ret;
 }
 
 /***********************************************************************
