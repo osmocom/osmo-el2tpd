@@ -448,6 +448,7 @@ static int rx_scc_rq(struct msgb *msg, struct avps_parsed *ap)
 		if (host_name)
 			l2cc->remote.host_name = talloc_strdup(l2cc, host_name);
 		memcpy(&l2cc->remote.ss, sockaddr, sizeof(*sockaddr));
+		l2cc->next_rx_seq_nr = 1;
 	} else {
 		LOGP(DL2TP, LOGL_ERROR, "Received a SCCRQ with control id != 0: %d\n", ch->ccid);
 		return -1;
@@ -660,6 +661,8 @@ static int l2tp_rcvmsg_control(struct msgb *msg)
 		return -1;
 	}
 	msg_type = osmo_load16be(first_avp->data);
+
+	/* FIXME: we need to get the l2c here to count the rx */
 
 	if (first_avp->vendor_id == VENDOR_IETF &&
 	    first_avp->type == AVP_IETF_CTRL_MSG)
