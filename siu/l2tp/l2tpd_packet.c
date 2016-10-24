@@ -286,7 +286,7 @@ static int l2tp_msgb_tx(struct msgb *msg)
  * IETF specified messages
  ***********************************************************************/
 
-int l2tp_tx_scc_rp(struct l2tpd_connection *lc)
+int l2tp_tx_scc_rp(struct l2tpd_connection *l2c)
 {
 	struct msgb *msg = l2tp_msgb_alloc();
 	const uint8_t eric_ver3_only[12] = { 0,0,0,3,  0,0,0,0, 0,0,0,0 };
@@ -296,7 +296,7 @@ int l2tp_tx_scc_rp(struct l2tpd_connection *lc)
 	msgb_avp_put_msgt(msg, VENDOR_IETF, IETF_CTRLMSG_SCCRP);
 	msgb_avp_put_digest(msg);
 	msgb_avp_put_u32(msg, VENDOR_IETF, AVP_IETF_AS_CTRL_CON_ID,
-			 lc->remote.ccid, true);
+			 l2c->remote.ccid, true);
 	msgb_avp_put(msg, VENDOR_ERICSSON, AVP_ERIC_PROTO_VER,
 		     eric_ver3_only, sizeof(eric_ver3_only), true);
 	msgb_avp_put(msg, VENDOR_IETF, AVP_IETF_HOST_NAME,
@@ -309,7 +309,7 @@ int l2tp_tx_scc_rp(struct l2tpd_connection *lc)
 	return l2tp_msgb_tx(msg);
 }
 
-int l2tp_tx_tc_rq(struct l2tpd_session *ls)
+int l2tp_tx_tc_rq(struct l2tpd_session *l2s)
 {
 	struct msgb *msg = l2tp_msgb_alloc();
 	const uint8_t tcg[] = { 0x00, 0x19, 0x01, 0x1f, 0x05,
@@ -325,7 +325,7 @@ int l2tp_tx_tc_rq(struct l2tpd_session *ls)
 	return l2tp_msgb_tx(msg);
 }
 
-int l2tp_tx_altc_rq(struct l2tpd_session *ls)
+int l2tp_tx_altc_rq(struct l2tpd_session *l2s)
 {
 	struct msgb *msg = l2tp_msgb_alloc();
 	const uint8_t tcsc[] = { 2,
@@ -340,16 +340,16 @@ int l2tp_tx_altc_rq(struct l2tpd_session *ls)
 	return l2tp_msgb_tx(msg);
 }
 
-int l2tp_tx_ic_rp(struct l2tpd_session *ls)
+int l2tp_tx_ic_rp(struct l2tpd_session *l2s)
 {
 	struct msgb *msg = l2tp_msgb_alloc();
 
 	msgb_avp_put_msgt(msg, VENDOR_IETF, IETF_CTRLMSG_ICRP);
 	msgb_avp_put_digest(msg);
 	msgb_avp_put_u32(msg, VENDOR_IETF, AVP_IETF_LOC_SESS_ID,
-			 ls->l_sess_id, true);
+			 l2s->l_sess_id, true);
 	msgb_avp_put_u32(msg, VENDOR_IETF, AVP_IETF_REM_SESS_ID,
-			 ls->r_sess_id, true);
+			 l2s->r_sess_id, true);
 	/* Circuit type: existing; Circuit status: up */
 	msgb_avp_put_u16(msg, VENDOR_IETF, AVP_IETF_CIRC_STATUS,
 			 0x0001, true);
@@ -363,7 +363,7 @@ int l2tp_tx_ic_rp(struct l2tpd_session *ls)
 	return l2tp_msgb_tx(msg);
 }
 
-int l2tp_tx_ack(struct l2tpd_session *ls)
+int l2tp_tx_ack(struct l2tpd_session *l2s)
 {
 	struct msgb *msg = l2tp_msgb_alloc();
 
@@ -373,7 +373,7 @@ int l2tp_tx_ack(struct l2tpd_session *ls)
 	return l2tp_msgb_tx(msg);
 }
 
-int l2tp_tx_hello(struct l2tpd_session *ls)
+int l2tp_tx_hello(struct l2tpd_session *l2s)
 {
 	struct msgb *msg = l2tp_msgb_alloc();
 
