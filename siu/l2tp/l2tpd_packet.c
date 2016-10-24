@@ -306,7 +306,7 @@ int l2tp_tx_scc_rp(struct l2tpd_connection *l2c)
 	const uint8_t eric_ver3_only[12] = { 0,0,0,3,  0,0,0,0, 0,0,0,0 };
 	const uint8_t host_name[3] = { 'B', 'S', 'C' };
 	const uint8_t vendor_name[8] = { 'E', 'r', 'i', 'c', 's', 's', 'o', 'n' };
-	const uint32_t router_id = 0x2342;
+	const uint32_t router_id = 0xac1e2a05;
 
 	msgb_avp_put_msgt(msg, VENDOR_IETF, IETF_CTRLMSG_SCCRP);
 	msgb_avp_put_digest(msg);
