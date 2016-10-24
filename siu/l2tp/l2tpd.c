@@ -662,7 +662,6 @@ int l2tp_rcvmsg(struct l2tpd_connection *conn, struct msgb *msg)
 static int l2tp_ip_read_cb(struct osmo_fd *ofd, unsigned int what)
 {
 	struct msgb *msg = l2tp_msgb_alloc();
-	struct l2tpd_connection *l2c;
 	struct sockaddr ss;
 	socklen_t ss_len = sizeof(ss);
 	int rc;
@@ -679,18 +678,7 @@ static int l2tp_ip_read_cb(struct osmo_fd *ofd, unsigned int what)
 	msg->l2h = msg->data;
 	msg->dst = &ss;
 
-
-	/* FIXME: resolve l2tpd_connection somewhere ? */
-	l2c = l2tpd_cc_find_by_sockaddr(l2i, &ss, sizeof(ss));
-	if (!l2c) {
-		/* create a new connection */
-		/* FIXME: add l2tp ip address */
-		LOGP(DL2TP, LOGL_ERROR, "New l2tp connection.\n");
-		l2c = l2tpd_cc_alloc(l2i);
-		memcpy(&l2c->remote.ss, &ss, sizeof(ss));
-	}
-
-	return l2tp_rcvmsg(l2c, msg);
+	return l2tp_rcvmsg(msg);
 }
 
 static int l2tpd_instance_start(struct l2tpd_instance *li)
