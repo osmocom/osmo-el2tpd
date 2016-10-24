@@ -260,7 +260,7 @@ static int digest_avp_update(struct msgb *msg)
 	 * local/remote nonce? */
 	hmac_res = HMAC(EVP_md5(), digest_key, sizeof(digest_key),
 			(const uint8_t *)l2h, len, NULL, NULL);
-	memcpy(ah->value, hmac_res, 16);
+	memcpy(ah->value + 1, hmac_res, 16);
 	DEBUGP(DL2TP, "Tx Message with digest: %s\n", msgb_hexdump(msg));
 
 	return 0;
