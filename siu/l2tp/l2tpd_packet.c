@@ -305,6 +305,7 @@ int l2tp_tx_scc_rp(struct l2tpd_connection *l2c)
 	struct msgb *msg = l2tp_msgb_alloc();
 	const uint8_t eric_ver3_only[12] = { 0,0,0,3,  0,0,0,0, 0,0,0,0 };
 	const uint8_t host_name[3] = { 'B', 'S', 'C' };
+	const uint8_t vendor_name[8] = { 'E', 'r', 'i', 'c', 's', 's', 'o', 'n' };
 	const uint32_t router_id = 0x2342;
 
 	msgb_avp_put_msgt(msg, VENDOR_IETF, IETF_CTRLMSG_SCCRP);
@@ -315,6 +316,8 @@ int l2tp_tx_scc_rp(struct l2tpd_connection *l2c)
 		     eric_ver3_only, sizeof(eric_ver3_only), true);
 	msgb_avp_put(msg, VENDOR_IETF, AVP_IETF_HOST_NAME,
 			host_name, sizeof(host_name), false);
+	msgb_avp_put(msg, VENDOR_IETF, AVP_IETF_VENDOR_NAME,
+			vendor_name, sizeof(vendor_name), false);
 	msgb_avp_put_u32(msg, VENDOR_IETF, AVP_IETF_ROUTER_ID,
 			 router_id, false);
 	msgb_avp_put_u16(msg, VENDOR_IETF, AVP_IETF_PW_CAP_LIST,
