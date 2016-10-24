@@ -389,7 +389,7 @@ static int tx_hello(struct l2tpd_session *ls)
 /* Incoming "Start Control-Connection Request" from SIU */
 static int rx_scc_rq(struct msgb *msg, struct avps_parsed *ap)
 {
-	struct l2tp_control_hdr *ch = msgb_l2tph(msg);
+	struct l2tp_control_hdr *ch = (struct l2tp_control_hdr *) msgb_data(msg);
 	struct l2tpd_connection *l2cc;
 	char *host_name = NULL;
 	uint16_t pw;
