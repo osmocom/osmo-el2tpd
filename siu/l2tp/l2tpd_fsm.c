@@ -1,13 +1,17 @@
 
 #include <osmocom/core/fsm.h>
+
+#include "l2tpd_packet.h"
 #include "l2tpd_fsm.h"
 
 #define S(x)	(1 << (x))
 
 static void l2tp_ctrl_s_init(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
-	/* FIXME: Send SCCRP */
-	osmo_fsm_inst_state_chg(fi, L2CC_S_WAIT_CTL_CONN, 0, 0);
+	struct l2tpd_connection *l2c = data;
+	if (!l2tp_tx_scc_rp(l2c)) {
+		osmo_fsm_inst_state_chg(fi, L2CC_S_WAIT_CTL_CONN, 0, 0);
+	}
 }
 
 static void l2tp_ctrl_s_wait_ctl_conn(struct osmo_fsm_inst *fi, uint32_t event, void *data)
