@@ -324,7 +324,7 @@ int l2tp_tx_scc_rp(struct l2tpd_connection *l2c)
 	msgb_avp_put_msgt(msg, VENDOR_IETF, IETF_CTRLMSG_SCCRP);
 	msgb_avp_put_digest(msg);
 	msgb_avp_put_u32(msg, VENDOR_IETF, AVP_IETF_AS_CTRL_CON_ID,
-			 l2c->remote.ccid, true);
+			 l2c->local.ccid, true);
 	msgb_avp_put(msg, VENDOR_ERICSSON, AVP_ERIC_PROTO_VER,
 		     eric_ver3_only, sizeof(eric_ver3_only), true);
 	msgb_avp_put(msg, VENDOR_IETF, AVP_IETF_HOST_NAME,
