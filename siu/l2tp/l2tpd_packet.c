@@ -648,12 +648,9 @@ static int l2tp_rcvmsg_control_ietf(struct l2tpd_connection *l2c,
 
 static int rx_eri_tcrp(struct l2tpd_connection *l2c, struct msgb *msg, struct avps_parsed *ap)
 {
-	struct l2tp_control_hdr *ch = msgb_l2tph(msg);
-	struct l2tpd_connection *l2cc = l2tpd_cc_find_by_l_cc_id(l2i, ch->ccid);
-
 	uint16_t avp_result = 0;
 
-	if (!l2cc)
+	if (!l2c)
 		return -1;
 
 	if (avpp_val_u16(ap, VENDOR_IETF, AVP_IETF_RESULT_CODE, &avp_result)) {
@@ -667,7 +664,7 @@ static int rx_eri_tcrp(struct l2tpd_connection *l2c, struct msgb *msg, struct av
 		/* FIXME: result message */
 		osmo_fsm_inst_dispatch(l2c->fsm, L2CC_E_LOCAL_CLOSE_REQ, msg);
 	}
-	osmo_fsm_inst_dispatch(l2cc->fsm, L2CC_E_RX_TCRP, msg);
+	osmo_fsm_inst_dispatch(l2c->fsm, L2CC_E_RX_TCRP, msg);
 	return 0;
 }
 
