@@ -141,6 +141,19 @@ int avpp_val_u16(struct avps_parsed *avps, uint16_t vendor_id, uint16_t type,
 	return 0;
 }
 
+int avpp_val_u8(struct avps_parsed *avps, uint16_t vendor_id, uint16_t type,
+		 uint8_t *u8)
+{
+	struct avp_parsed *avp = avps_parsed_find(avps, vendor_id, type);
+	if (!avp)
+		return -ENODEV;
+	if (avp->data_len < sizeof(*u8))
+		return -EINVAL;
+
+	*u8 = *((uint8_t *)avp->data);
+	return 0;
+}
+
 /* store an AVP at the end of the msg */
 static int msgb_avp_put(struct msgb *msg, uint16_t vendor_id, uint16_t type,
 			const uint8_t *data, uint16_t data_len, bool m_flag)
