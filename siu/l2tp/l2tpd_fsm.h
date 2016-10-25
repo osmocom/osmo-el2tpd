@@ -15,6 +15,8 @@ enum l2tpd_ctrl_con_event {
 	L2CC_E_RX_SCCCN,
 	/* Received Stop CCN */
 	L2CC_E_RX_STOP_CCN,
+	/* Received Transport configuration Reply */
+	L2CC_E_RX_TCRP,
 };
 
 enum l2tpd_in_call_event {
@@ -42,6 +44,10 @@ enum l2tpd_ctrl_con_state {
 	L2CC_S_WAIT_CTL_CONN,
 	/* Control Conncetion is established */
 	L2CC_S_ESTABLISHED,
+	/* After we sent a TCRQ, waiting for TCRP */
+	L2CC_S_WAIT_FOR_TCRP,
+	/* We configured the SIU to start sessions */
+	L2CC_S_ESTABLISHED_CONFIGURED
 };
 
 /* ICRQ recipient */
