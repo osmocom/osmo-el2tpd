@@ -670,7 +670,7 @@ static int l2tp_rcvmsg_control(struct msgb *msg)
 		if (l2c->next_rx_seq_nr < (ch->Ns + 1))
 			l2c->next_rx_seq_nr =  ch->Ns + 1;
 		if (l2c->next_tx_seq_nr != ch->Nr)
-			LOGP(DL2TP, LOGL_ERROR, "l2tp: wrong seq number received. expectd %d != recveived %d.\n", l2c->next_tx_seq_nr, ch->Ns);
+			LOGP(DL2TP, LOGL_ERROR, "cid %d: wrong seq number received. expectd %d != recveived %d.\n", l2c->local.ccid, l2c->next_tx_seq_nr, ch->Ns);
 	}
 
 	if (first_avp->vendor_id == VENDOR_IETF &&
