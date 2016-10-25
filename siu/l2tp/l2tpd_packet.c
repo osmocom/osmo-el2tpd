@@ -557,6 +557,17 @@ static int rx_stop_ccn(struct l2tpd_connection *l2cc, struct msgb *msg, struct a
 	return 0;
 }
 
+/* Incoming Keepalive / Hello from SIU */
+static int rx_hello(struct l2tpd_connection *l2cc, struct msgb *msg, struct avps_parsed *ap)
+{
+	if (!l2cc)
+		return -1;
+
+	osmo_fsm_inst_dispatch(l2cc->fsm, L2CC_E_RX_HELLO, msg);
+	return 0;
+}
+
+
 /* Incoming "Incoming Call Request" from SIU */
 static int rx_ic_rq(struct l2tpd_connection *l2cc, struct msgb *msg, struct avps_parsed *ap)
 {
@@ -635,6 +646,8 @@ static int l2tp_rcvmsg_control_ietf(struct l2tpd_connection *l2c,
 		return rx_ic_cn(l2c, msg, ap);
 	case IETF_CTRLMSG_CDN:
 		return rx_cdn(l2c, msg, ap);
+	case IETF_CTRLMSG_HELLO:
+		return rx_hello(l2c, msg, ap);
 	default:
 		LOGP(DL2TP, LOGL_ERROR, "Unknown/Unhandled IETF Control "
 			"Message Type 0x%04x\n", msg_type);

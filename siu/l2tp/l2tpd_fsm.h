@@ -17,6 +17,8 @@ enum l2tpd_ctrl_con_event {
 	L2CC_E_RX_STOP_CCN,
 	/* Received Transport configuration Reply */
 	L2CC_E_RX_TCRP,
+	/* Received a HELLO / Keepalive */
+	L2CC_E_RX_HELLO,
 };
 
 enum l2tpd_in_call_event {
