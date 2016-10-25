@@ -339,6 +339,27 @@ int l2tp_tx_stop_ccn(struct l2tpd_connection *l2c)
 	return l2tp_msgb_tx(msg);
 }
 
+int l2tp_tx_stop_ccn_msg(struct msgb *old)
+{
+	struct msgb *msg = l2tp_msgb_alloc();
+	struct l2tpd_connection l2c;
+	memset(&l2c, 0x0, sizeof(l2c));
+
+	struct l2tp_control_hdr *ch = (struct l2tp_control_hdr *) msgb_data(old);
+
+	memcpy(&l2c.remote.ss, old->dst, sizeof(struct sockaddr));
+	l2c.next_tx_seq_nr = ch->Nr;
+	l2c.next_rx_seq_nr = ch->Ns + 1;
+	l2c.remote.ccid = ch->ccid;
+	/* FIXME: use pointer instead of this call */
+
+	msgb_avp_put_msgt(msg, VENDOR_IETF, IETF_CTRLMSG_STOPCCN);
+	msgb_avp_put_digest(msg);
+
+	msg->dst = &l2c;
+	return l2tp_msgb_tx(msg);
+}
+
 int l2tp_tx_tc_rq(struct l2tpd_session *l2s)
 {
 	struct msgb *msg = l2tp_msgb_alloc();
