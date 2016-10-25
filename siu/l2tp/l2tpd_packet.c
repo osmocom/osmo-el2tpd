@@ -327,6 +327,18 @@ int l2tp_tx_scc_rp(struct l2tpd_connection *l2c)
 	return l2tp_msgb_tx(msg);
 }
 
+int l2tp_tx_stop_ccn(struct l2tpd_connection *l2c)
+{
+	struct msgb *msg = l2tp_msgb_alloc();
+	/* FIXME: use pointer instead of this call */
+
+	msgb_avp_put_msgt(msg, VENDOR_IETF, IETF_CTRLMSG_STOPCCN);
+	msgb_avp_put_digest(msg);
+
+	msg->dst = l2c;
+	return l2tp_msgb_tx(msg);
+}
+
 int l2tp_tx_tc_rq(struct l2tpd_session *l2s)
 {
 	struct msgb *msg = l2tp_msgb_alloc();
