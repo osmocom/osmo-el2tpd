@@ -360,36 +360,69 @@ int l2tp_tx_stop_ccn_msg(struct msgb *old)
 	return l2tp_msgb_tx(msg);
 }
 
-int l2tp_tx_tc_rq(struct l2tpd_session *l2s)
+int l2tp_tx_tc_rq(struct l2tpd_connection *l2c)
+{
+    struct msgb *msg = l2tp_msgb_alloc();
+    const uint8_t tcg[] = {
+        0x03, 0xe8, /* overload threashold */
+        0x03, /* number of transport groups */
+
+        /* first transport group */
+        0x11, /* tc group id */
+        0x02, /* number of sapis */
+        0x00, 0x62, /* SAPIs */
+        172, 23, 42, 3, /* IP */
+        0x2e, 0x01, 0x5, 0x1, 0x2c, /* dscp, crc32, bundling timeout, max packet size */
+
+        /* second transport group */
+        0x06, /* tc group id */
+        0x02, /* number of sapis */
+        0x0a, 0x0b, /* SAPIs */
+        172, 23, 42, 3, /* IP */
+        0x08, 0x01, 0x5, 0x1, 0x2c, /* dscp, crc32, bundling timeout, max packet size */
+
+        /* third transport group */
+        0x08, /* tc group id */
+        0x01, /* number of sapis */
+        0x0c, /* SAPIs */
+        172, 23, 42, 3, /* IP */
+        0x22, 0x01, 0x5, 0x1, 0x2c, /* dscp, crc32, bundling timeout, max packet size */
+    };
+
+    msgb_avp_put_msgt(msg, VENDOR_ERICSSON, ERIC_CTRLMSG_TCRQ);
+    msgb_avp_put_digest(msg);
+    msgb_avp_put(msg, VENDOR_ERICSSON, AVP_ERIC_TRANSP_CFG,
+	    tcg, sizeof(tcg), true);
+
+    msg->dst = l2c;
+    return l2tp_msgb_tx(msg);
+}
+
+int l2tp_tx_altc_rq_timeslot(struct l2tpd_connection *l2c)
 {
 	struct msgb *msg = l2tp_msgb_alloc();
-	/* FIXME: use pointer instead of this call */
-	struct l2tpd_connection *l2c = l2tpd_cc_find_by_l_cc_id(l2i, l2s->l_sess_id);
-	const uint8_t tcg[] = { 0x00, 0x19, 0x01, 0x1f, 0x05,
-				0, 10, 11, 12, 62, /* SAPIs */
-				10, 251, 134, 1, /* IP */
-				0x00, 0x01, 0x05, 0x05, 0xb9 };
 
-	msgb_avp_put_msgt(msg, VENDOR_ERICSSON, ERIC_CTRLMSG_TCRQ);
+	msgb_avp_put_msgt(msg, VENDOR_ERICSSON, ERIC_CTRLMSG_ALTCRQ);
 	msgb_avp_put_digest(msg);
-	msgb_avp_put(msg, VENDOR_ERICSSON, AVP_ERIC_TRANSP_CFG,
-			tcg, sizeof(tcg), true);
+	msgb_avp_put_u32(msg, VENDOR_IETF, AVP_ERIC_ABIS_LO_MODE,
+			 0x0, true); /* SingleTimeslot */
 
 	msg->dst = l2c;
 	return l2tp_msgb_tx(msg);
 }
 
-int l2tp_tx_altc_rq(struct l2tpd_session *l2s)
+int l2tp_tx_altc_rq_superchannel(struct l2tpd_connection *l2c)
 {
 	struct msgb *msg = l2tp_msgb_alloc();
-	/* FIXME: use pointer instead of this call */
-	struct l2tpd_connection *l2c = l2tpd_cc_find_by_l_cc_id(l2i, l2s->l_sess_id);
-	const uint8_t tcsc[] = { 2,
-				0, 0, 0,
-				62, 62, 0 };
+	const uint8_t tcsc[] = {
+		2, /* number of transport config bundling group */
+		1, 1, 0x0, /* TEI from 1 to 1 to SC 0 */
+		62, 62, 0x0}; /* TEI from 62 to 62 to SC 0 */
 
 	msgb_avp_put_msgt(msg, VENDOR_ERICSSON, ERIC_CTRLMSG_ALTCRQ);
 	msgb_avp_put_digest(msg);
+	msgb_avp_put_u32(msg, VENDOR_IETF, AVP_ERIC_ABIS_LO_MODE,
+			 0x1, true); /* Superchannel */
 	msgb_avp_put(msg, VENDOR_ERICSSON, AVP_ERIC_TEI_TO_SC_MAP,
 			tcsc, sizeof(tcsc), true);
 
