@@ -62,6 +62,9 @@ struct l2tpd_session {
 	uint32_t next_tx_seq_nr;
 	/* seq nr of expected next Rx frame */
 	uint32_t next_rx_seq_nr;
+	/* remote end id. TCRQ & ALTRQ configures the bundling ids to TEI/SAPIs.
+	 * In ICRQ the remote end id is used as bundling id */
+	uint8_t remote_end_id;
 	/* finite state machine for call/session */
 	struct osmo_fsm_inst *fsm;
 
