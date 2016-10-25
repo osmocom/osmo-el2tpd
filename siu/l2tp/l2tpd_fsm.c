@@ -101,7 +101,8 @@ static const struct osmo_fsm_state l2tp_ctrl_states[] = {
 	},
 	[L2CC_S_WAIT_CTL_CONN] = {
 		.in_event_mask = S(L2CC_E_RX_SCCCN) |
-				 S(L2CC_E_LOCAL_CLOSE_REQ),
+				 S(L2CC_E_LOCAL_CLOSE_REQ) |
+				 S(L2CC_E_RX_STOP_CCN),
 		.out_state_mask = S(L2CC_S_ESTABLISHED) |
 				  S(L2CC_S_INIT),
 		.name = "WAIT_CTL_CONN",
