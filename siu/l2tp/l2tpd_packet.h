@@ -7,7 +7,7 @@ struct l2tpd_session;
 /* control connection management */
 int l2tp_tx_scc_rp(struct l2tpd_connection *l2c);
 int l2tp_tx_stop_ccn(struct l2tpd_connection *l2c);
-int l2tp_tx_stop_ccn_msg(struct msgb *old)
+int l2tp_tx_stop_ccn_msg(struct msgb *old);
 int l2tp_tx_tc_rq(struct l2tpd_connection *l2c);
 int l2tp_tx_altc_rq_superchannel(struct l2tpd_connection *l2c);
 int l2tp_tx_altc_rq_timeslot(struct l2tpd_connection *l2c);
