@@ -39,7 +39,7 @@ static void l2tp_ctrl_s_established(struct osmo_fsm_inst *fi, uint32_t event, vo
 {
 	struct l2tpd_connection *l2c = fi->priv;
 
-	if (!l2tp_tx_scc_rp(l2c)) {
+	if (!l2tp_tx_tc_rq(l2c)) {
 		osmo_fsm_inst_state_chg(fi, L2CC_S_WAIT_FOR_TCRP, 0, 0);
 	}
 }
