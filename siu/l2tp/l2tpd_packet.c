@@ -651,8 +651,23 @@ static int rx_eri_tcrp(struct l2tpd_connection *l2c, struct msgb *msg, struct av
 	struct l2tp_control_hdr *ch = msgb_l2tph(msg);
 	struct l2tpd_connection *l2cc = l2tpd_cc_find_by_l_cc_id(l2i, ch->ccid);
 
+	uint16_t avp_result = 0;
+
 	if (!l2cc)
 		return -1;
+
+	if (avpp_val_u16(ap, VENDOR_IETF, AVP_IETF_RESULT_CODE, &avp_result)) {
+		LOGP(DL2TP, LOGL_ERROR, "TXRP doesnt contain a result code. Aborting control connection.\n");
+		osmo_fsm_inst_dispatch(l2c->fsm, L2CC_E_LOCAL_CLOSE_REQ, msg);
+	}
+
+	if (avp_result) {
+		LOGP(DL2TP, LOGL_ERROR, "TXRP returned result code %d instead of 0. Aborting control connection.\n",
+		     avp_result);
+		/* FIXME: result message */
+		osmo_fsm_inst_dispatch(l2c->fsm, L2CC_E_LOCAL_CLOSE_REQ, msg);
+	}
+	osmo_fsm_inst_dispatch(l2cc->fsm, L2CC_E_RX_TCRP, msg);
 	return 0;
 }
 
