@@ -26,18 +26,9 @@ static void l2tp_ctrl_s_wait_ctl_conn(struct osmo_fsm_inst *fi, uint32_t event, 
 	struct l2tpd_connection *l2c = fi->priv;
 
 	switch (event) {
-	case L2CC_E_LOCAL_CLOSE_REQ:
-		l2tp_tx_stop_ccn(l2c);
-		osmo_fsm_inst_state_chg(fi, L2CC_S_INIT, 0, 0);
-		/* FIXME: teardown */
-		break;
 	case L2CC_E_RX_SCCCN:
 		if (!l2tp_tx_tc_rq(l2c))
 			osmo_fsm_inst_state_chg(fi, L2CC_S_WAIT_FOR_TCRP, 0, 0);
-		break;
-	case L2CC_E_RX_STOP_CCN:
-		l2tp_tx_ack(l2c);
-		/* FIXME: tear down whole l2c */
 		break;
 	}
 }
@@ -56,15 +47,6 @@ static void l2tp_ctrl_s_wait_for_tcrp(struct osmo_fsm_inst *fi, uint32_t event, 
 	struct l2tpd_connection *l2c = fi->priv;
 
 	switch (event) {
-	case L2CC_E_LOCAL_CLOSE_REQ:
-		l2tp_tx_stop_ccn(l2c);
-		osmo_fsm_inst_state_chg(fi, L2CC_S_INIT, 0, 0);
-		/* FIXME: teardown instead of INIT */
-		break;
-	case L2CC_E_RX_STOP_CCN:
-		l2tp_tx_ack(l2c);
-		/* FIXME: tear down whole l2c */
-		break;
 	case L2CC_E_RX_TCRP:
 		l2tp_tx_ack(l2c);
 		osmo_fsm_inst_state_chg(fi, L2CC_S_ESTABLISHED_CONFIGURED, 0, 0);
@@ -73,6 +55,10 @@ static void l2tp_ctrl_s_wait_for_tcrp(struct osmo_fsm_inst *fi, uint32_t event, 
 }
 
 static void l2tp_ctrl_s_established_configured(struct osmo_fsm_inst *fi, uint32_t event, void *data)
+{
+}
+
+static void l2tp_ctrl_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct l2tpd_connection *l2c = fi->priv;
 
@@ -85,6 +71,9 @@ static void l2tp_ctrl_s_established_configured(struct osmo_fsm_inst *fi, uint32_
 	case L2CC_E_RX_STOP_CCN:
 		l2tp_tx_ack(l2c);
 		/* FIXME: tear down whole l2c */
+		break;
+	case L2CC_E_RX_HELLO:
+		l2tp_tx_ack(l2c);
 		break;
 	}
 }
@@ -107,9 +96,7 @@ static const struct osmo_fsm_state l2tp_ctrl_states[] = {
 		.action = l2tp_ctrl_s_init,
 	},
 	[L2CC_S_WAIT_CTL_CONN] = {
-		.in_event_mask = S(L2CC_E_RX_SCCCN) |
-				 S(L2CC_E_LOCAL_CLOSE_REQ) |
-				 S(L2CC_E_RX_STOP_CCN),
+		.in_event_mask = S(L2CC_E_RX_SCCCN),
 		.out_state_mask = S(L2CC_S_ESTABLISHED) |
 				  S(L2CC_S_WAIT_FOR_TCRP) |
 				  S(L2CC_S_INIT),
@@ -117,25 +104,21 @@ static const struct osmo_fsm_state l2tp_ctrl_states[] = {
 		.action = l2tp_ctrl_s_wait_ctl_conn,
 	},
 	[L2CC_S_ESTABLISHED] = {
-		.in_event_mask = S(L2CC_E_LOCAL_CLOSE_REQ) |
-				 S(L2CC_E_RX_STOP_CCN),
+		.in_event_mask = 0,
 		.out_state_mask = S(L2CC_S_WAIT_FOR_TCRP) |
 				  S(L2CC_S_INIT),
 		.name = "ESTABLISHED",
 		.action = l2tp_ctrl_s_established,
 	},
 	[L2CC_S_WAIT_FOR_TCRP] = {
-		.in_event_mask = S(L2CC_E_LOCAL_CLOSE_REQ) |
-				 S(L2CC_E_RX_STOP_CCN) |
-				 S(L2CC_E_RX_TCRP),
+		.in_event_mask = S(L2CC_E_RX_TCRP),
 		.out_state_mask = S(L2CC_S_ESTABLISHED_CONFIGURED) |
 				  S(L2CC_S_INIT),
 		.name = "WAIT_FOR_TCRP",
 		.action = l2tp_ctrl_s_wait_for_tcrp,
 	},
 	[L2CC_S_ESTABLISHED_CONFIGURED] = {
-		.in_event_mask = S(L2CC_E_LOCAL_CLOSE_REQ) |
-				 S(L2CC_E_RX_STOP_CCN),
+		.in_event_mask = 0,
 		.out_state_mask = S(L2CC_S_INIT),
 		.name = "ESTABLISHED_CONFIGURED",
 		.action = l2tp_ctrl_s_established_configured,
@@ -148,6 +131,8 @@ struct osmo_fsm l2tp_cc_fsm = {
 	.num_states = ARRAY_SIZE(l2tp_ctrl_states),
 	.log_subsys = 0,
 	.event_names = l2tp_cc_events,
+	.allstate_event_mask = S(L2CC_E_RX_HELLO) | S(L2CC_E_LOCAL_CLOSE_REQ) | S(L2CC_E_RX_STOP_CCN),
+	.allstate_action = l2tp_ctrl_allstate,
 };
 
 
