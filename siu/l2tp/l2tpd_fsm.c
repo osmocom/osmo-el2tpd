@@ -19,6 +19,11 @@ static void l2tp_ctrl_s_wait_ctl_conn(struct osmo_fsm_inst *fi, uint32_t event, 
 	struct l2tpd_connection *l2c = fi->priv;
 
 	switch (event) {
+	case L2CC_E_LOCAL_CLOSE_REQ:
+		l2tp_tx_stop_ccn(l2c);
+		osmo_fsm_inst_state_chg(fi, L2CC_S_INIT, 0, 0);
+		/* FIXME: teardown */
+		break;
 	case L2CC_E_RX_SCCCN:
 		l2tp_tx_ack(l2c);
 		osmo_fsm_inst_state_chg(fi, L2CC_S_ESTABLISHED, 0, 0);
@@ -36,7 +41,9 @@ static void l2tp_ctrl_s_established(struct osmo_fsm_inst *fi, uint32_t event, vo
 
 	switch (event) {
 	case L2CC_E_LOCAL_CLOSE_REQ:
-		/* FIXME: Send StopCCN */
+		l2tp_tx_stop_ccn(l2c);
+		osmo_fsm_inst_state_chg(fi, L2CC_S_INIT, 0, 0);
+		/* FIXME: teardown */
 		break;
 	case L2CC_E_RX_STOP_CCN:
 		l2tp_tx_ack(l2c);
