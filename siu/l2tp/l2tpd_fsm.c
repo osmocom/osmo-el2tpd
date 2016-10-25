@@ -32,8 +32,8 @@ static void l2tp_ctrl_s_wait_ctl_conn(struct osmo_fsm_inst *fi, uint32_t event, 
 		/* FIXME: teardown */
 		break;
 	case L2CC_E_RX_SCCCN:
-		l2tp_tx_ack(l2c);
-		osmo_fsm_inst_state_chg(fi, L2CC_S_ESTABLISHED, 0, 0);
+		if (!l2tp_tx_tc_rq(l2c))
+			osmo_fsm_inst_state_chg(fi, L2CC_S_WAIT_FOR_TCRP, 0, 0);
 		break;
 	case L2CC_E_RX_STOP_CCN:
 		l2tp_tx_ack(l2c);
@@ -111,6 +111,7 @@ static const struct osmo_fsm_state l2tp_ctrl_states[] = {
 				 S(L2CC_E_LOCAL_CLOSE_REQ) |
 				 S(L2CC_E_RX_STOP_CCN),
 		.out_state_mask = S(L2CC_S_ESTABLISHED) |
+				  S(L2CC_S_WAIT_FOR_TCRP) |
 				  S(L2CC_S_INIT),
 		.name = "WAIT_CTL_CONN",
 		.action = l2tp_ctrl_s_wait_ctl_conn,
