@@ -42,7 +42,10 @@ static int l2tp_ip_read_cb(struct osmo_fd *ofd, unsigned int what)
 	msg->l2h = msg->data;
 	msg->dst = &ss;
 
-	return l2tp_rcvmsg(msg);
+	rc = l2tp_rcvmsg(msg);
+	msgb_free(msg);
+
+	return rc;
 }
 
 static int l2tpd_instance_start(struct l2tpd_instance *li)
