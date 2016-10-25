@@ -645,7 +645,7 @@ static int l2tp_rcvmsg_control_ietf(struct l2tpd_connection *l2c,
  * Ericsson specific messages
  ***********************************************************************/
 
-static int rx_eri_tcrp(struct msgb *msg, struct avps_parsed *ap)
+static int rx_eri_tcrp(struct l2tpd_connection *l2c, struct msgb *msg, struct avps_parsed *ap)
 {
 	struct l2tp_control_hdr *ch = msgb_l2tph(msg);
 	struct l2tpd_connection *l2cc = l2tpd_cc_find_by_l_cc_id(l2i, ch->ccid);
@@ -655,7 +655,7 @@ static int rx_eri_tcrp(struct msgb *msg, struct avps_parsed *ap)
 	return 0;
 }
 
-static int rx_eri_altcrp(struct msgb *msg, struct avps_parsed *ap)
+static int rx_eri_altcrp(struct l2tpd_connection *l2c, struct msgb *msg, struct avps_parsed *ap)
 {
 	struct l2tp_control_hdr *ch = msgb_l2tph(msg);
 	struct l2tpd_connection *l2cc = l2tpd_cc_find_by_l_cc_id(l2i, ch->ccid);
@@ -672,9 +672,9 @@ static int l2tp_rcvmsg_control_ericsson(struct l2tpd_connection *l2c,
 {
 	switch (msg_type) {
 	case ERIC_CTRLMSG_TCRP:
-		return rx_eri_tcrp(msg, ap);
+		return rx_eri_tcrp(l2c, msg, ap);
 	case ERIC_CTRLMSG_ALTCRP:
-		return rx_eri_altcrp(msg, ap);
+		return rx_eri_altcrp(l2c, msg, ap);
 	default:
 		LOGP(DL2TP, LOGL_ERROR, "Unknown/Unhandled Ericsson Control "
 			"Message Type 0x%04x\n", msg_type);
