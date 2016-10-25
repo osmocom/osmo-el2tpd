@@ -150,24 +150,6 @@ struct osmo_fsm l2tp_cc_fsm = {
 	.event_names = l2tp_cc_events,
 };
 
-static void l2tp_ic_s_init(struct osmo_fsm_inst *fi, uint32_t event, void *data)
-{
-	/* ICRQ was received */
-	OSMO_ASSERT(event == L2IC_E_RX_ICRQ);
-	/* FIXME: Send ICRP */
-	osmo_fsm_inst_state_chg(fi, L2IC_S_WAIT_CONN, 0, 0);
-}
-
-static void l2tp_ic_s_wait_conn(struct osmo_fsm_inst *fi, uint32_t event, void *data)
-{
-	/* ICCN wsa received */
-	OSMO_ASSERT(event == L2IC_E_RX_ICCN);
-	osmo_fsm_inst_state_chg(fi, L2IC_S_ESTABLISHED, 0, 0);
-}
-
-static void l2tp_ic_s_established(struct osmo_fsm_inst *fi, uint32_t event, void *data)
-{
-}
 
 static void l2tp_ic_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
@@ -181,6 +163,37 @@ static void l2tp_ic_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 		break;
 	}
 }
+
+static void l2tp_ic_s_init(struct osmo_fsm_inst *fi, uint32_t event, void *data)
+{
+	struct l2tpd_session *l2s = fi->priv;
+
+	switch (event) {
+	case L2IC_E_RX_ICRQ:
+		if (!l2tp_tx_ic_rp(l2s))
+			osmo_fsm_inst_state_chg(fi, L2IC_S_WAIT_CONN, 0, 0);
+		break;
+	}
+	l2tp_ic_allstate(fi, event, data);
+}
+
+static void l2tp_ic_s_wait_conn(struct osmo_fsm_inst *fi, uint32_t event, void *data)
+{
+	struct l2tpd_session *l2s = (struct l2tpd_session *) fi->priv;
+	struct l2tpd_connection *l2c = l2tpd_cc_find_by_l_cc_id(l2i, l2s->l_sess_id);
+
+	switch (event) {
+	case L2IC_E_RX_ICCN:
+		/* ICCN wsa received */
+		if (!l2tp_tx_ack(l2c))
+			osmo_fsm_inst_state_chg(fi, L2IC_S_ESTABLISHED, 0, 0);
+	}
+}
+
+static void l2tp_ic_s_established(struct osmo_fsm_inst *fi, uint32_t event, void *data)
+{
+}
+
 
 static const struct value_string l2tp_ic_names[] = {
 	{ L2IC_E_RX_ICRQ, "RX-InCall-Req" },
