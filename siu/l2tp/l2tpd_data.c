@@ -86,10 +86,13 @@ struct l2tpd_session *
 l2tpd_sess_alloc(struct l2tpd_connection *conn)
 {
 	struct l2tpd_session *l2s = talloc_zero(conn, struct l2tpd_session);
+	char id_str[12] = {0};
 
 	l2s->l_sess_id = conn->next_l_sess_id++;
+	snprintf(id_str, 12, "%d", l2s->l_sess_id);
 
 	llist_add(&l2s->list, &conn->sessions);
+	l2s->fsm = osmo_fsm_inst_alloc(&l2tp_ic_fsm, l2s, l2s, LOGL_DEBUG, id_str);
 
 	return l2s;
 }
