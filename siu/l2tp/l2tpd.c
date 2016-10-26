@@ -33,8 +33,10 @@ static int l2tp_ip_read_cb(struct osmo_fd *ofd, unsigned int what)
 	/* actually read the message from the raw IP socket */
 	rc = recvfrom(ofd->fd, msg->data, msg->data_len, 0,
 			(struct sockaddr *) &ss, &ss_len);
-	if (rc < 0)
+	if (rc < 0) {
+		LOGP(DL2TP, LOGL_ERROR, "recvfrom() failed: %s\n", strerror(errno));
 		return rc;
+	}
 	msgb_put(msg, rc);
 	msg->l1h = msg->data; /* l1h = ip header */
 
