@@ -384,21 +384,21 @@ int l2tp_tx_tc_rq(struct l2tpd_connection *l2c)
         0x11, /* tc group id */
         0x02, /* number of sapis */
 	00, 62, /* SAPIs */
-        172, 23, 42, 3, /* IP */
+	172, 30, 42, 3, /* IP */
         0x2e, 0x01, 0x5, 0x1, 0x2c, /* dscp, crc32, bundling timeout, max packet size */
 
         /* second transport group */
         0x06, /* tc group id */
         0x02, /* number of sapis */
 	10, 11, /* SAPIs */
-        172, 23, 42, 3, /* IP */
+	172, 30, 42, 3, /* IP */
         0x08, 0x01, 0x5, 0x1, 0x2c, /* dscp, crc32, bundling timeout, max packet size */
 
         /* third transport group */
         0x08, /* tc group id */
         0x01, /* number of sapis */
 	12, /* SAPIs */
-        172, 23, 42, 3, /* IP */
+	172, 30, 42, 3, /* IP */
         0x22, 0x01, 0x5, 0x1, 0x2c, /* dscp, crc32, bundling timeout, max packet size */
     };
 
