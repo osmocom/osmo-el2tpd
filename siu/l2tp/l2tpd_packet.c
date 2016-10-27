@@ -421,7 +421,7 @@ int l2tp_tx_altc_rq_timeslot(struct l2tpd_connection *l2c)
 
 	msgb_avp_put_msgt(msg, VENDOR_ERICSSON, ERIC_CTRLMSG_ALTCRQ);
 	msgb_avp_put_digest(msg);
-	msgb_avp_put_u32(msg, VENDOR_IETF, AVP_ERIC_ABIS_LO_MODE,
+	msgb_avp_put_u8(msg, VENDOR_ERICSSON, AVP_ERIC_ABIS_LO_MODE,
 			 0x0, true); /* SingleTimeslot */
 
 	msg->dst = l2c;
@@ -438,7 +438,7 @@ int l2tp_tx_altc_rq_superchannel(struct l2tpd_connection *l2c)
 
 	msgb_avp_put_msgt(msg, VENDOR_ERICSSON, ERIC_CTRLMSG_ALTCRQ);
 	msgb_avp_put_digest(msg);
-	msgb_avp_put_u32(msg, VENDOR_IETF, AVP_ERIC_ABIS_LO_MODE,
+	msgb_avp_put_u8(msg, VENDOR_ERICSSON, AVP_ERIC_ABIS_LO_MODE,
 			 0x1, true); /* Superchannel */
 	msgb_avp_put(msg, VENDOR_ERICSSON, AVP_ERIC_TEI_TO_SC_MAP,
 			tcsc, sizeof(tcsc), true);
