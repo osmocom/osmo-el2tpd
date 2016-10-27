@@ -98,6 +98,7 @@ static const struct value_string l2tp_cc_events[] = {
 	{ L2CC_E_RX_STOP_CCN,		"RX-STOPCCN" },
 	{ L2CC_E_RX_TCRP,		"RX-TCRP" },
 	{ L2CC_E_RX_ALTCRP,		"RX-ALTCRP" },
+	{ L2CC_E_RX_HELLO,		"RX-HELLO" },
 	{ 0, NULL }
 };
 
