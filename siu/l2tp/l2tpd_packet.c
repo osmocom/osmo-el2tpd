@@ -279,7 +279,7 @@ static int digest_avp_update(struct msgb *msg)
 	return 0;
 }
 
-static int l2tp_msgb_tx(struct msgb *msg)
+static int l2tp_msgb_tx(struct msgb *msg, int not_ack)
 {
 	struct l2tpd_connection *l2c = msg->dst;
 	struct l2tp_control_hdr *l2h;
@@ -291,8 +291,12 @@ static int l2tp_msgb_tx(struct msgb *msg)
 	l2h->ver = htons(T_BIT|L_BIT|S_BIT| 0x3);
 	l2h->length = htons(msgb_length(msg));
 	l2h->ccid = htonl(l2c->remote.ccid);
-	l2h->Ns = htons(l2c->next_tx_seq_nr++);
 	l2h->Nr = htons(l2c->next_rx_seq_nr);
+	/* only acks dont increase seq */
+	if (not_ack)
+		l2h->Ns = htons(l2c->next_tx_seq_nr++);
+	else
+		l2h->Ns = htons(l2c->next_tx_seq_nr - 1);
 
 	/* then insert/patch the message digest AVP */
 	digest_avp_update(msg);
@@ -337,7 +341,7 @@ int l2tp_tx_scc_rp(struct l2tpd_connection *l2c)
 			 0x0006, true);
 
 	msg->dst = l2c;
-	return l2tp_msgb_tx(msg);
+	return l2tp_msgb_tx(msg, 1);
 }
 
 int l2tp_tx_stop_ccn(struct l2tpd_connection *l2c)
@@ -349,7 +353,7 @@ int l2tp_tx_stop_ccn(struct l2tpd_connection *l2c)
 	msgb_avp_put_digest(msg);
 
 	msg->dst = l2c;
-	return l2tp_msgb_tx(msg);
+	return l2tp_msgb_tx(msg, 1);
 }
 
 int l2tp_tx_stop_ccn_msg(struct msgb *old)
@@ -370,7 +374,7 @@ int l2tp_tx_stop_ccn_msg(struct msgb *old)
 	msgb_avp_put_digest(msg);
 
 	msg->dst = &l2c;
-	return l2tp_msgb_tx(msg);
+	return l2tp_msgb_tx(msg, 1);
 }
 
 int l2tp_tx_tc_rq(struct l2tpd_connection *l2c)
@@ -408,7 +412,7 @@ int l2tp_tx_tc_rq(struct l2tpd_connection *l2c)
 	    tcg, sizeof(tcg), true);
 
     msg->dst = l2c;
-    return l2tp_msgb_tx(msg);
+    return l2tp_msgb_tx(msg, 1);
 }
 
 int l2tp_tx_altc_rq_timeslot(struct l2tpd_connection *l2c)
@@ -421,7 +425,7 @@ int l2tp_tx_altc_rq_timeslot(struct l2tpd_connection *l2c)
 			 0x0, true); /* SingleTimeslot */
 
 	msg->dst = l2c;
-	return l2tp_msgb_tx(msg);
+	return l2tp_msgb_tx(msg, 1);
 }
 
 int l2tp_tx_altc_rq_superchannel(struct l2tpd_connection *l2c)
@@ -440,7 +444,7 @@ int l2tp_tx_altc_rq_superchannel(struct l2tpd_connection *l2c)
 			tcsc, sizeof(tcsc), true);
 
 	msg->dst = l2c;
-	return l2tp_msgb_tx(msg);
+	return l2tp_msgb_tx(msg, 1);
 }
 
 int l2tp_tx_ic_rp(struct l2tpd_session *l2s)
@@ -466,7 +470,7 @@ int l2tp_tx_ic_rp(struct l2tpd_session *l2s)
 			 0x0002, true);
 
 	msg->dst = l2c;
-	return l2tp_msgb_tx(msg);
+	return l2tp_msgb_tx(msg, 1);
 }
 
 int l2tp_tx_ack(struct l2tpd_connection *l2c)
@@ -478,7 +482,7 @@ int l2tp_tx_ack(struct l2tpd_connection *l2c)
 	msgb_avp_put_digest(msg);
 
 	msg->dst = l2c;
-	return l2tp_msgb_tx(msg);
+	return l2tp_msgb_tx(msg, 0);
 }
 
 int l2tp_tx_hello(struct l2tpd_session *l2s)
@@ -491,7 +495,7 @@ int l2tp_tx_hello(struct l2tpd_session *l2s)
 	msgb_avp_put_digest(msg);
 
 	msg->dst = l2c;
-	return l2tp_msgb_tx(msg);
+	return l2tp_msgb_tx(msg, 1);
 }
 
 /* Incoming "Start Control-Connection Request" from SIU */
