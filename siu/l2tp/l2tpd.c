@@ -34,7 +34,7 @@ static int l2tp_ip_read_cb(struct osmo_fd *ofd, unsigned int what)
 	rc = recvfrom(ofd->fd, msg->data, msg->data_len, 0,
 			(struct sockaddr *) &ss, &ss_len);
 	if (rc < 0) {
-		LOGP(DL2TP, LOGL_ERROR, "recvfrom() failed: %s\n", strerror(errno));
+		LOGP(DL2TP, LOGL_ERROR, "recievefrom failed %s\n", strerror(errno));
 		return rc;
 	}
 	msgb_put(msg, rc);
