@@ -713,6 +713,7 @@ static int l2tp_rcvmsg_control_ericsson(struct l2tpd_connection *l2c,
 					struct msgb *msg, struct avps_parsed *ap,
 					uint16_t msg_type)
 {
+	LOGP(DL2TP, LOGL_ERROR, "Rx: ericsson msg_type 0x%04x\n", msg_type);
 	switch (msg_type) {
 	case ERIC_CTRLMSG_TCRP:
 		return rx_eri_tcrp(l2c, msg, ap);
@@ -792,6 +793,8 @@ static int l2tp_rcvmsg_control(struct msgb *msg)
 			LOGP(DL2TP, LOGL_ERROR, "cid %d: wrong seq number received. expectd %d != recveived %d.\n", l2c->local.ccid, l2c->next_tx_seq_nr, ch->Ns);
 	}
 
+	LOGP(DL2TP, LOGL_ERROR, "Rx: l2tp vendor/type 0x%04x/0x%04x 0x%04x\n", first_avp->vendor_id, first_avp->type, msg_type);
+
 	if (first_avp->vendor_id == VENDOR_IETF &&
 	    first_avp->type == AVP_IETF_CTRL_MSG)
 		return l2tp_rcvmsg_control_ietf(l2c, msg, &ap, msg_type);
@@ -816,6 +819,8 @@ int l2tp_rcvmsg(struct msgb *msg)
 		/* strip session ID and feed to control */
 		msgb_pull(msg, sizeof(session));
 		return l2tp_rcvmsg_control(msg);
+	} else {
+		LOGP(DL2TP, LOGL_ERROR, "Received session %d data.\n", session);
 	}
 	return -1;
 }
