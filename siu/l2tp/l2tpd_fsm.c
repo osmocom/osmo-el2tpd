@@ -82,6 +82,7 @@ static void l2tp_ctrl_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *d
 		break;
 	case L2CC_E_RX_STOP_CCN:
 		l2tp_tx_ack(l2c);
+		osmo_fsm_inst_state_chg(fi, L2CC_S_INIT, 0, 0);
 		/* FIXME: tear down whole l2c */
 		break;
 	case L2CC_E_RX_HELLO:
