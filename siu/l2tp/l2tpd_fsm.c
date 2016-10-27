@@ -48,6 +48,18 @@ static void l2tp_ctrl_s_wait_for_tcrp(struct osmo_fsm_inst *fi, uint32_t event, 
 
 	switch (event) {
 	case L2CC_E_RX_TCRP:
+		l2tp_tx_altc_rq_timeslot(l2c);
+		osmo_fsm_inst_state_chg(fi, L2CC_S_WAIT_FOR_ALTCRP, 0, 0);
+		break;
+	}
+}
+
+static void l2tp_ctrl_s_wait_for_altcrp(struct osmo_fsm_inst *fi, uint32_t event, void *data)
+{
+	struct l2tpd_connection *l2c = fi->priv;
+
+	switch (event) {
+	case L2CC_E_RX_ALTCRP:
 		l2tp_tx_ack(l2c);
 		osmo_fsm_inst_state_chg(fi, L2CC_S_ESTABLISHED_CONFIGURED, 0, 0);
 		break;
@@ -85,6 +97,7 @@ static const struct value_string l2tp_cc_events[] = {
 	{ L2CC_E_RX_SCCCN,		"RX-SCCCN" },
 	{ L2CC_E_RX_STOP_CCN,		"RX-STOPCCN" },
 	{ L2CC_E_RX_TCRP,		"RX-TCRP" },
+	{ L2CC_E_RX_ALTCRP,		"RX-ALTCRP" },
 	{ 0, NULL }
 };
 
@@ -112,10 +125,17 @@ static const struct osmo_fsm_state l2tp_ctrl_states[] = {
 	},
 	[L2CC_S_WAIT_FOR_TCRP] = {
 		.in_event_mask = S(L2CC_E_RX_TCRP),
-		.out_state_mask = S(L2CC_S_ESTABLISHED_CONFIGURED) |
+		.out_state_mask = S(L2CC_S_WAIT_FOR_ALTCRP) |
 				  S(L2CC_S_INIT),
 		.name = "WAIT_FOR_TCRP",
 		.action = l2tp_ctrl_s_wait_for_tcrp,
+	},
+	[L2CC_S_WAIT_FOR_ALTCRP] = {
+		.in_event_mask = S(L2CC_E_RX_ALTCRP),
+		.out_state_mask = S(L2CC_S_ESTABLISHED_CONFIGURED) |
+				  S(L2CC_S_INIT),
+		.name = "WAIT_FOR_ALTCRP",
+		.action = l2tp_ctrl_s_wait_for_altcrp,
 	},
 	[L2CC_S_ESTABLISHED_CONFIGURED] = {
 		.in_event_mask = 0,
