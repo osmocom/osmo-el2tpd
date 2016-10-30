@@ -135,7 +135,7 @@ static void l2tp_conf_s_wait_for_tc_sessions(struct osmo_fsm_inst *fi, uint32_t 
 	int i = 0;
 
 	switch (event) {
-		case L2CONF_E_RX_ICCN:
+		case L2CONF_E_ESTABLISH_SESSION:
 			llist_for_each_entry(l2s, &l2c->sessions, list) {
 				i++;
 			}
@@ -168,7 +168,7 @@ static void l2tp_conf_s_wait_for_altc_sessions(struct osmo_fsm_inst *fi, uint32_
 	int i = 0;
 
 	switch (event) {
-		case L2CONF_E_RX_ICCN:
+		case L2CONF_E_ESTABLISH_SESSION:
 			llist_for_each_entry(l2s, &l2c->sessions, list) {
 				i++;
 			}
