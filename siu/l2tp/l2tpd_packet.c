@@ -609,7 +609,7 @@ static int rx_ic_rq(struct l2tpd_connection *l2cc, struct msgb *msg, struct avps
 		}
 	}
 
-	osmo_fsm_inst_dispatch(l2cc->fsm, L2IC_E_RX_ICRQ, msg);
+	osmo_fsm_inst_dispatch(l2s->fsm, L2IC_E_RX_ICRQ, msg);
 	return 0;
 }
 
