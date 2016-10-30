@@ -352,6 +352,7 @@ int l2tp_tx_stop_ccn(struct l2tpd_connection *l2c)
 
 	msgb_avp_put_msgt(msg, VENDOR_IETF, IETF_CTRLMSG_STOPCCN);
 	msgb_avp_put_digest(msg);
+	msgb_avp_put_u16(msg, VENDOR_IETF, AVP_IETF_RESULT_CODE, 0x1, 1);
 
 	msg->dst = l2c;
 	return l2tp_msgb_tx(msg, 1);
