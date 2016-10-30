@@ -292,9 +292,11 @@ static void l2tp_ic_s_wait_conn(struct osmo_fsm_inst *fi, uint32_t event, void *
 
 	switch (event) {
 	case L2IC_E_RX_ICCN:
-		/* ICCN wsa received */
-		if (!l2tp_tx_ack(l2c))
+		/* ICCN received */
+		if (!l2tp_tx_ack(l2c)) {
 			osmo_fsm_inst_state_chg(fi, L2IC_S_ESTABLISHED, 0, 0);
+			osmo_fsm_inst_dispatch(l2c->conf_fsm, L2CONF_E_ESTABLISH_SESSION, data);
+		}
 	}
 }
 
