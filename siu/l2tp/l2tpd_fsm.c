@@ -151,7 +151,7 @@ static void l2tp_conf_s_wait_for_altcrp(struct osmo_fsm_inst *fi, uint32_t event
 	struct l2tpd_connection *l2c = fi->priv;
 
 	switch (event) {
-	case L2CC_E_RX_ALTCRP:
+	case L2CONF_E_RX_ALTCRP:
 		l2tp_tx_ack(l2c);
 		osmo_fsm_inst_state_chg(fi, L2CONF_S_WAIT_FOR_ALTC_SESSIONS, 0, 0);
 		break;
