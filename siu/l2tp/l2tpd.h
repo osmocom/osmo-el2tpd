@@ -42,8 +42,6 @@ struct l2tpd_connection {
 	uint16_t next_tx_seq_nr;
 	/* seq nr of expected next Rx frame */
 	uint16_t next_rx_seq_nr;
-	/* next local session id */
-	uint32_t next_l_sess_id;
 	/* finite state machine for connection */
 	struct osmo_fsm_inst *fsm;
 	/* finite state machine for traffic channels */
@@ -78,7 +76,11 @@ struct l2tpd_session {
 struct l2tpd_instance {
 	/* list of l2tpd_connection */
 	struct llist_head connections;
+	/* next connection id */
 	uint32_t next_l_cc_id;
+	/* next local session id */
+	uint32_t next_l_sess_id;
+
 
 	struct osmo_fd l2tp_ofd;
 

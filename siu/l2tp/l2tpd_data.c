@@ -79,19 +79,17 @@ l2tpd_cc_alloc(struct l2tpd_instance *l2i)
 	llist_add(&l2c->list, &l2i->connections);
 	l2c->fsm = osmo_fsm_inst_alloc(&l2tp_cc_fsm, l2c, l2c, LOGL_DEBUG, id_str);
 	l2c->conf_fsm = osmo_fsm_inst_alloc(&l2tp_conf_fsm, l2c, l2c, LOGL_DEBUG, id_str);
-	/* session id starts with 1 */
-	l2c->next_l_sess_id = 1;
 
 	return l2c;
 }
 
 struct l2tpd_session *
-l2tpd_sess_alloc(struct l2tpd_connection *conn)
+l2tpd_sess_alloc(struct l2tpd_instance *l2i, struct l2tpd_connection *conn)
 {
 	struct l2tpd_session *l2s = talloc_zero(conn, struct l2tpd_session);
 	char id_str[12] = {0};
 
-	l2s->l_sess_id = conn->next_l_sess_id++;
+	l2s->l_sess_id = l2i->next_l_sess_id++;
 	snprintf(id_str, 12, "%d", l2s->l_sess_id);
 
 	llist_add(&l2s->list, &conn->sessions);
