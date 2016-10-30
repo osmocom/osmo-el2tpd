@@ -613,13 +613,55 @@ static int rx_ic_rq(struct l2tpd_connection *l2cc, struct msgb *msg, struct avps
 	return 0;
 }
 
+static struct l2tpd_session *
+get_session_by_msg(struct l2tpd_connection *l2cc, struct msgb *msg,
+			       struct avps_parsed *ap)
+{
+	struct l2tpd_session *l2s;
+	uint32_t l_sess_id;
+	uint32_t r_sess_id;
+
+	if (avpp_val_u32(ap, VENDOR_IETF, AVP_IETF_REM_SESS_ID, &r_sess_id)) {
+		LOGP(DL2TP, LOGL_ERROR, "ccid %d: Missing AVP REM_SESS_ID\n",
+		     l2cc->local.ccid);
+		return NULL;
+	}
+	if (avpp_val_u32(ap, VENDOR_IETF, AVP_IETF_LOC_SESS_ID, &l_sess_id)) {
+		LOGP(DL2TP, LOGL_ERROR, "ccid %d: Missing AVP LOC_SESS_ID\n",
+		     l2cc->local.ccid);
+		return NULL;
+	}
+
+	l2s = l2tpd_sess_find_by_l_s_id(l2cc, r_sess_id);
+	if (!l2s) {
+		LOGP(DL2TP, LOGL_ERROR, "ccid %d: Can not find session %d\n",
+		     l2cc->local.ccid, r_sess_id);
+		return NULL;
+	}
+
+	if (l2s->r_sess_id != l_sess_id) {
+		LOGP(DL2TP, LOGL_ERROR, "ccid %d: Packet remote session id %d differs from known %d\n",
+		     l2cc->local.ccid, l_sess_id, l2s->r_sess_id);
+		return NULL;
+	}
+
+	return l2s;
+}
+
 /* Incoming "Incoming Call Connected" from SIU */
 static int rx_ic_cn(struct l2tpd_connection *l2cc, struct msgb *msg, struct avps_parsed *ap)
 {
+	struct l2tpd_session *l2s;
+
 	if (!l2cc)
 		return -1;
 
-	osmo_fsm_inst_dispatch(l2cc->fsm, L2IC_E_RX_ICCN, msg);
+	l2s = get_session_by_msg(l2cc, msg, ap);
+	if (!l2s) {
+		return -1;
+	}
+
+	osmo_fsm_inst_dispatch(l2s->fsm, L2IC_E_RX_ICCN, msg);
 	return 0;
 }
 
