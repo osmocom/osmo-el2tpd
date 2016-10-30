@@ -95,6 +95,7 @@ l2tpd_sess_alloc(struct l2tpd_connection *conn)
 
 	llist_add(&l2s->list, &conn->sessions);
 	l2s->fsm = osmo_fsm_inst_alloc(&l2tp_ic_fsm, l2s, l2s, LOGL_DEBUG, id_str);
+	l2s->connection = conn;
 
 	return l2s;
 }

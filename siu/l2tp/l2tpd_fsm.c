@@ -187,7 +187,7 @@ static void l2tp_ic_s_init(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 static void l2tp_ic_s_wait_conn(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct l2tpd_session *l2s = (struct l2tpd_session *) fi->priv;
-	struct l2tpd_connection *l2c = l2tpd_cc_find_by_l_cc_id(l2i, l2s->l_sess_id);
+	struct l2tpd_connection *l2c = l2s->connection;
 
 	switch (event) {
 	case L2IC_E_RX_ICCN:
