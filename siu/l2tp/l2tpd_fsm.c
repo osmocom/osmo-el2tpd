@@ -195,7 +195,7 @@ static void l2tp_conf_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *d
 
 static const struct value_string l2tp_conf_events[] = {
 	{ L2CONF_E_LOCAL_CLOSE_REQ,	"LOCAL-CLOSE" },
-	{ L2CONF_E_TX_TCRQ,		"RX-TCRP" },
+	{ L2CONF_E_TX_TCRQ,		"TX-TCRQ" },
 	{ L2CONF_E_RX_TCRP,		"RX-TCRP" },
 	{ L2CONF_E_RX_ALTCRP,		"RX-ALTCRP" },
 	{ L2IC_E_RX_ICCN, "RX-InCall-Connect" },
