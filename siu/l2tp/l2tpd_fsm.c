@@ -204,15 +204,15 @@ static const struct value_string l2tp_conf_events[] = {
 
 static const struct osmo_fsm_state l2tp_conf_states[] = {
 	[L2CONF_S_INIT] = {
-		.in_event_mask = S(L2CONF_E_RX_TCRP),
-		.out_state_mask = S(L2CONF_S_WAIT_FOR_ALTCRP) |
+		.in_event_mask = S(L2CONF_E_TX_TCRQ),
+		.out_state_mask = S(L2CONF_S_WAIT_FOR_TCRP) |
 				  S(L2CONF_S_INIT),
-		.name = "WAIT_FOR_TCRP",
+		.name = "INIT",
 		.action = l2tp_conf_s_init,
 	},
 	[L2CONF_S_WAIT_FOR_TCRP] = {
 		.in_event_mask = S(L2CONF_E_RX_TCRP),
-		.out_state_mask = S(L2CONF_S_WAIT_FOR_ALTCRP) |
+		.out_state_mask = S(L2CONF_S_WAIT_FOR_TC_SESSIONS) |
 				  S(L2CONF_S_INIT),
 		.name = "WAIT_FOR_TCRP",
 		.action = l2tp_conf_s_wait_for_tcrp,
@@ -226,14 +226,14 @@ static const struct osmo_fsm_state l2tp_conf_states[] = {
 	},
 	[L2CONF_S_WAIT_FOR_ALTCRP] = {
 		.in_event_mask = S(L2CONF_E_RX_ALTCRP),
-		.out_state_mask = S(L2CONF_S_ESTABLISHED) |
+		.out_state_mask = S(L2CONF_S_WAIT_FOR_ALTC_SESSIONS) |
 				  S(L2CONF_S_INIT),
 		.name = "WAIT_FOR_ALTCRP",
 		.action = l2tp_conf_s_wait_for_altcrp,
 	},
 	[L2CONF_S_WAIT_FOR_ALTC_SESSIONS] = {
 		.in_event_mask = S(L2CONF_E_RX_TCRP),
-		.out_state_mask = S(L2CONF_S_WAIT_FOR_ALTCRP) |
+		.out_state_mask = S(L2CONF_S_ESTABLISHED) |
 				  S(L2CONF_S_INIT),
 		.name = "WAIT_FOR_ALTC_SESSIONS",
 		.action = l2tp_conf_s_wait_for_altc_sessions,
@@ -252,7 +252,7 @@ struct osmo_fsm l2tp_conf_fsm = {
 	.num_states = ARRAY_SIZE(l2tp_conf_states),
 	.log_subsys = 0,
 	.event_names = l2tp_conf_events,
-	.allstate_event_mask = S(L2CC_E_LOCAL_CLOSE_REQ),
+	.allstate_event_mask = S(L2CONF_E_LOCAL_CLOSE_REQ),
 	.allstate_action = l2tp_conf_allstate,
 };
 
