@@ -296,7 +296,7 @@ static int l2tp_msgb_tx(struct msgb *msg, int not_ack)
 	if (not_ack)
 		l2h->Ns = htons(l2c->next_tx_seq_nr++);
 	else
-		l2h->Ns = htons(l2c->next_tx_seq_nr - 1);
+		l2h->Ns = htons(l2c->next_tx_seq_nr);
 
 	/* then insert/patch the message digest AVP */
 	digest_avp_update(msg);
