@@ -23,6 +23,15 @@ enum l2tpd_ctrl_con_event {
 	L2CC_E_RX_HELLO,
 };
 
+enum l2tpd_ctrl_con_state {
+	/* Before we receive SCCRQ*/
+	L2CC_S_INIT,
+	/* After we sent SCCRP, waiting for SCCCN */
+	L2CC_S_WAIT_CTL_CONN,
+	/* Control Conncetion is established */
+	L2CC_S_ESTABLISHED,
+};
+
 enum l2tpd_in_call_event {
 #if 0
 	L2IC_E_START,
@@ -40,21 +49,7 @@ enum l2tpd_in_call_event {
 	/* Local Close Request */
 	L2IC_E_LOCAL_CLOSE_REQ,
 };
-
-enum l2tpd_ctrl_con_state {
-	/* Before we receive SCCRQ*/
-	L2CC_S_INIT,
-	/* After we sent SCCRP, waiting for SCCCN */
-	L2CC_S_WAIT_CTL_CONN,
-	/* Control Conncetion is established */
-	L2CC_S_ESTABLISHED,
-	/* After we sent a TCRQ, waiting for TCRP */
-	L2CC_S_WAIT_FOR_TCRP,
-	/* After we sent a ALTTCRQ, waiting for ALTCRP */
-	L2CC_S_WAIT_FOR_ALTCRP,
-	/* We configured the SIU to start sessions */
-	L2CC_S_ESTABLISHED_CONFIGURED
-};
+extern struct osmo_fsm l2tp_cc_fsm;
 
 /* ICRQ recipient */
 enum l2tpd_in_call_state {
@@ -64,6 +59,33 @@ enum l2tpd_in_call_state {
 	L2IC_S_WAIT_CONN,
 	L2IC_S_ESTABLISHED,
 };
-
 extern struct osmo_fsm l2tp_ic_fsm;
-extern struct osmo_fsm l2tp_cc_fsm;
+
+enum l2tpd_configure_event {
+	/* sent the TC rq within state machine */
+	L2CONF_E_TX_TCRQ,
+	/* received TC RP */
+	L2CONF_E_RX_TCRP,
+	/* l2tp session setted up */
+	L2CONF_E_RX_ICCN,
+	/* received ALTC RP */
+	L2CONF_E_RX_ALTCRP,
+	/* Local Close Request */
+	L2CONF_E_LOCAL_CLOSE_REQ,
+};
+
+enum l2tpd_configure_state {
+	/* initial state, sent out TCRQ */
+	L2CONF_S_INIT,
+	/* Waiting for TCRP */
+	L2CONF_S_WAIT_FOR_TCRP,
+	/* Wait until all l2tp sessions of tcrp setted up. Afterwards sent out ALTCRQ */
+	L2CONF_S_WAIT_FOR_TC_SESSIONS,
+	/* Waiting for ALTCRP */
+	L2CONF_S_WAIT_FOR_ALTCRP,
+	/* Wait until all l2tp session altcr setted up */
+	L2CONF_S_WAIT_FOR_ALTC_SESSIONS,
+	/* Established */
+	L2CONF_S_ESTABLISHED
+};
+extern struct osmo_fsm l2tp_conf_fsm;
