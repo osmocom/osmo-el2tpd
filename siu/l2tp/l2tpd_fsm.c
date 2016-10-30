@@ -74,7 +74,7 @@ static const struct value_string l2tp_cc_events[] = {
 static const struct osmo_fsm_state l2tp_ctrl_states[] = {
 	[L2CC_S_INIT] = {
 		.in_event_mask = S(L2CC_E_RX_SCCRQ),
-		.out_state_mask = S(L2CC_S_WAIT_CTL_CONN),
+		.out_state_mask = S(L2CC_S_WAIT_CTL_CONN) | S(L2CC_S_INIT),
 		.name = "INIT",
 		.action = l2tp_ctrl_s_init,
 	},
