@@ -50,6 +50,8 @@ struct l2tpd_connection {
 
 /* A L2TP session within a connection */
 struct l2tpd_session {
+	/* our conncetion */
+	struct l2tpd_connection *connection;
 	/* our link into the connection.sessions */
 	struct llist_head list;
 	/* local session ID */

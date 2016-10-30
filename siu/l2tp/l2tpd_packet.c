@@ -451,8 +451,7 @@ int l2tp_tx_altc_rq_superchannel(struct l2tpd_connection *l2c)
 int l2tp_tx_ic_rp(struct l2tpd_session *l2s)
 {
 	struct msgb *msg = l2tp_msgb_alloc();
-	/* FIXME: use pointer instead of this call */
-	struct l2tpd_connection *l2c = l2tpd_cc_find_by_l_cc_id(l2i, l2s->l_sess_id);
+	struct l2tpd_connection *l2c = l2s->connection;
 
 	msgb_avp_put_msgt(msg, VENDOR_IETF, IETF_CTRLMSG_ICRP);
 	msgb_avp_put_digest(msg);
