@@ -46,6 +46,8 @@ struct l2tpd_connection {
 	uint32_t next_l_sess_id;
 	/* finite state machine for connection */
 	struct osmo_fsm_inst *fsm;
+	/* finite state machine for traffic channels */
+	struct osmo_fsm_inst *conf_fsm;
 };
 
 /* A L2TP session within a connection */
