@@ -78,6 +78,7 @@ l2tpd_cc_alloc(struct l2tpd_instance *l2i)
 
 	llist_add(&l2c->list, &l2i->connections);
 	l2c->fsm = osmo_fsm_inst_alloc(&l2tp_cc_fsm, l2c, l2c, LOGL_DEBUG, id_str);
+	l2c->conf_fsm = osmo_fsm_inst_alloc(&l2tp_conf_fsm, l2c, l2c, LOGL_DEBUG, id_str);
 	/* session id starts with 1 */
 	l2c->next_l_sess_id = 1;
 
