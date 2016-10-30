@@ -100,12 +100,15 @@ l2tpd_sess_alloc(struct l2tpd_instance *l2i, struct l2tpd_connection *conn)
 }
 
 struct l2tpd_session *
-l2tpd_sess_find_by_l_s_id(struct l2tpd_connection *conn, uint32_t session_id)
+l2tpd_sess_find_by_l_s_id(struct l2tpd_instance *l2i, uint32_t session_id)
 {
 	struct l2tpd_session *l2s;
-	llist_for_each_entry(l2s, &conn->sessions, list) {
-		if (l2s->l_sess_id == session_id)
-			return l2s;
+	struct l2tpd_connection *l2c;
+	llist_for_each_entry(l2c, &l2i->connections, list) {
+		llist_for_each_entry(l2s, &l2c->sessions, list) {
+			if (l2s->l_sess_id == session_id)
+				return l2s;
+		}
 	}
 	return NULL;
 }
