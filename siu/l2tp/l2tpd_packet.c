@@ -725,7 +725,7 @@ static int rx_eri_tcrp(struct l2tpd_connection *l2c, struct msgb *msg, struct av
 		/* FIXME: result message */
 		osmo_fsm_inst_dispatch(l2c->fsm, L2CC_E_LOCAL_CLOSE_REQ, msg);
 	}
-	osmo_fsm_inst_dispatch(l2c->fsm, L2CC_E_RX_TCRP, msg);
+	osmo_fsm_inst_dispatch(l2c->conf_fsm, L2CONF_E_RX_TCRP, msg);
 	return 0;
 }
 
@@ -747,7 +747,7 @@ static int rx_eri_altcrp(struct l2tpd_connection *l2c, struct msgb *msg, struct 
 		/* FIXME: result message */
 		osmo_fsm_inst_dispatch(l2c->fsm, L2CC_E_LOCAL_CLOSE_REQ, msg);
 	}
-	osmo_fsm_inst_dispatch(l2c->fsm, L2CC_E_RX_ALTCRP, msg);
+	osmo_fsm_inst_dispatch(l2c->conf_fsm, L2CONF_E_RX_ALTCRP, msg);
 	return 0;
 }
 
