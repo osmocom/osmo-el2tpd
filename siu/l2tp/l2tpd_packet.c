@@ -602,8 +602,9 @@ static int rx_ic_rq(struct l2tpd_connection *l2cc, struct msgb *msg, struct avps
 		     l2cc->local.ccid, r_sess_id);
 		l2s = l2tpd_sess_find_by_l_s_id(l2cc, r_sess_id);
 		if (!l2s) {
-			LOGP(DL2TP, LOGL_ERROR, "NoSession %u\n",
+			LOGP(DL2TP, LOGL_ERROR, "NoSession found for %u\n",
 				r_sess_id);
+			/* FIXME: send error packet */
 			return -1;
 		}
 	}
