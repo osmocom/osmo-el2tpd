@@ -181,7 +181,6 @@ static void l2tp_ic_s_init(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 			osmo_fsm_inst_state_chg(fi, L2IC_S_WAIT_CONN, 0, 0);
 		break;
 	}
-	l2tp_ic_allstate(fi, event, data);
 }
 
 static void l2tp_ic_s_wait_conn(struct osmo_fsm_inst *fi, uint32_t event, void *data)
