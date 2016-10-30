@@ -27,8 +27,10 @@ static void l2tp_ctrl_s_wait_ctl_conn(struct osmo_fsm_inst *fi, uint32_t event, 
 
 	switch (event) {
 	case L2CC_E_RX_SCCCN:
-		if (!l2tp_tx_tc_rq(l2c))
+		if (!l2tp_tx_ack(l2c)) {
 			osmo_fsm_inst_state_chg(fi, L2CC_S_ESTABLISHED, 0, 0);
+			osmo_fsm_inst_dispatch(l2c->conf_fsm, L2CONF_E_TX_TCRQ, data);
+		}
 		break;
 	}
 }
@@ -103,17 +105,46 @@ struct osmo_fsm l2tp_cc_fsm = {
 
 /* l2tp conf fsm */
 
+static void l2tp_conf_s_init(struct osmo_fsm_inst *fi, uint32_t event, void *data)
+{
+	switch (event) {
+		case L2CONF_E_TX_TCRQ:
+			break;
+	}
+}
+
 static void l2tp_conf_s_wait_for_tcrp(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct l2tpd_connection *l2c = fi->priv;
 
 	switch (event) {
-	case L2CC_E_RX_TCRP:
+	case L2CONF_E_RX_TCRP:
 		l2tp_tx_altc_rq_timeslot(l2c);
 		osmo_fsm_inst_state_chg(fi, L2CONF_S_WAIT_FOR_ALTCRP, 0, 0);
 		break;
 	}
 }
+
+static void l2tp_conf_s_wait_for_tc_sessions(struct osmo_fsm_inst *fi, uint32_t event, void *data)
+{
+	struct l2tpd_connection *l2c = fi->priv;
+	struct l2tpd_session *l2s;
+	int i = 0;
+
+	switch (event) {
+		case L2CONF_E_RX_ICCN:
+			llist_for_each_entry(l2s, &l2c->sessions, list) {
+				i++;
+			}
+			LOGP(DL2TP, LOGL_ERROR, "Found %d sessions\n", i);
+			if (i >= 3) {
+				osmo_fsm_inst_state_chg(fi, L2CONF_S_WAIT_FOR_ALTCRP, 0, 0);
+				l2tp_tx_altc_rq_timeslot(l2c);
+			}
+			break;
+	}
+}
+
 
 static void l2tp_conf_s_wait_for_altcrp(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
@@ -122,10 +153,31 @@ static void l2tp_conf_s_wait_for_altcrp(struct osmo_fsm_inst *fi, uint32_t event
 	switch (event) {
 	case L2CC_E_RX_ALTCRP:
 		l2tp_tx_ack(l2c);
-		osmo_fsm_inst_state_chg(fi, L2CONF_S_ESTABLISHED, 0, 0);
+		osmo_fsm_inst_state_chg(fi, L2CONF_S_WAIT_FOR_ALTC_SESSIONS, 0, 0);
 		break;
 	}
 }
+
+static void l2tp_conf_s_wait_for_altc_sessions(struct osmo_fsm_inst *fi, uint32_t event, void *data)
+{
+	struct l2tpd_connection *l2c = fi->priv;
+	struct l2tpd_session *l2s;
+	int i = 0;
+
+	switch (event) {
+		case L2CONF_E_RX_ICCN:
+			llist_for_each_entry(l2s, &l2c->sessions, list) {
+				i++;
+			}
+			LOGP(DL2TP, LOGL_ERROR, "Found %d sessions\n", i);
+
+			if (i >= 4) {
+				osmo_fsm_inst_state_chg(fi, L2CONF_S_ESTABLISHED, 0, 0);
+			}
+			break;
+	}
+}
+
 
 static void l2tp_conf_s_established(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
@@ -156,7 +208,7 @@ static const struct osmo_fsm_state l2tp_conf_states[] = {
 		.out_state_mask = S(L2CONF_S_WAIT_FOR_ALTCRP) |
 				  S(L2CONF_S_INIT),
 		.name = "WAIT_FOR_TCRP",
-		.action = l2tp_conf_s_wait_for_tcrp,
+		.action = l2tp_conf_s_init,
 	},
 	[L2CONF_S_WAIT_FOR_TCRP] = {
 		.in_event_mask = S(L2CONF_E_RX_TCRP),
@@ -169,8 +221,8 @@ static const struct osmo_fsm_state l2tp_conf_states[] = {
 		.in_event_mask = S(L2CONF_E_RX_TCRP),
 		.out_state_mask = S(L2CONF_S_WAIT_FOR_ALTCRP) |
 				  S(L2CONF_S_INIT),
-		.name = "WAIT_FOR_TCRP",
-		.action = l2tp_conf_s_wait_for_tcrp,
+		.name = "WAIT_FOR_TC_SESSIONS",
+		.action = l2tp_conf_s_wait_for_tc_sessions,
 	},
 	[L2CONF_S_WAIT_FOR_ALTCRP] = {
 		.in_event_mask = S(L2CONF_E_RX_ALTCRP),
@@ -178,6 +230,13 @@ static const struct osmo_fsm_state l2tp_conf_states[] = {
 				  S(L2CONF_S_INIT),
 		.name = "WAIT_FOR_ALTCRP",
 		.action = l2tp_conf_s_wait_for_altcrp,
+	},
+	[L2CONF_S_WAIT_FOR_ALTC_SESSIONS] = {
+		.in_event_mask = S(L2CONF_E_RX_TCRP),
+		.out_state_mask = S(L2CONF_S_WAIT_FOR_ALTCRP) |
+				  S(L2CONF_S_INIT),
+		.name = "WAIT_FOR_ALTC_SESSIONS",
+		.action = l2tp_conf_s_wait_for_altc_sessions,
 	},
 	[L2CONF_S_ESTABLISHED] = {
 		.in_event_mask = 0,
