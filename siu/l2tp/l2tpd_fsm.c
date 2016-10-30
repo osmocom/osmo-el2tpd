@@ -112,6 +112,7 @@ static void l2tp_conf_s_init(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 	switch (event) {
 		case L2CONF_E_TX_TCRQ:
 			l2tp_tx_tc_rq(l2c);
+			osmo_fsm_inst_state_chg(fi, L2CONF_S_WAIT_FOR_TCRP, 0, 0);
 			break;
 	}
 }
@@ -122,8 +123,8 @@ static void l2tp_conf_s_wait_for_tcrp(struct osmo_fsm_inst *fi, uint32_t event, 
 
 	switch (event) {
 	case L2CONF_E_RX_TCRP:
-		l2tp_tx_altc_rq_timeslot(l2c);
-		osmo_fsm_inst_state_chg(fi, L2CONF_S_WAIT_FOR_ALTCRP, 0, 0);
+		l2tp_tx_ack(l2c);
+		osmo_fsm_inst_state_chg(fi, L2CONF_S_WAIT_FOR_TC_SESSIONS, 0, 0);
 		break;
 	}
 }
@@ -201,7 +202,7 @@ static const struct value_string l2tp_conf_events[] = {
 	{ L2CONF_E_TX_TCRQ,		"TX-TCRQ" },
 	{ L2CONF_E_RX_TCRP,		"RX-TCRP" },
 	{ L2CONF_E_RX_ALTCRP,		"RX-ALTCRP" },
-	{ L2IC_E_RX_ICCN, "RX-InCall-Connect" },
+	{ L2CONF_E_ESTABLISH_SESSION, "RX-InCall-Connect" },
 	{ 0, NULL }
 };
 
@@ -221,7 +222,7 @@ static const struct osmo_fsm_state l2tp_conf_states[] = {
 		.action = l2tp_conf_s_wait_for_tcrp,
 	},
 	[L2CONF_S_WAIT_FOR_TC_SESSIONS] = {
-		.in_event_mask = S(L2CONF_E_RX_TCRP),
+		.in_event_mask = S(L2CONF_E_ESTABLISH_SESSION),
 		.out_state_mask = S(L2CONF_S_WAIT_FOR_ALTCRP) |
 				  S(L2CONF_S_INIT),
 		.name = "WAIT_FOR_TC_SESSIONS",
@@ -235,7 +236,7 @@ static const struct osmo_fsm_state l2tp_conf_states[] = {
 		.action = l2tp_conf_s_wait_for_altcrp,
 	},
 	[L2CONF_S_WAIT_FOR_ALTC_SESSIONS] = {
-		.in_event_mask = S(L2CONF_E_RX_TCRP),
+		.in_event_mask = S(L2CONF_E_ESTABLISH_SESSION),
 		.out_state_mask = S(L2CONF_S_ESTABLISHED) |
 				  S(L2CONF_S_INIT),
 		.name = "WAIT_FOR_ALTC_SESSIONS",

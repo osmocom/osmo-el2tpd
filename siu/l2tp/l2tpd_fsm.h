@@ -17,10 +17,6 @@ enum l2tpd_ctrl_con_event {
 	L2CC_E_RX_SCCCN,
 	/* Received Stop CCN */
 	L2CC_E_RX_STOP_CCN,
-	/* Received Transport configuration Reply */
-	L2CC_E_RX_TCRP,
-	/* Received Abis Lower Transport configuration Reply */
-	L2CC_E_RX_ALTCRP,
 	/* Received a HELLO / Keepalive */
 	L2CC_E_RX_HELLO,
 };
