@@ -1,5 +1,7 @@
 #pragma once
 
+#include <osmocom/core/fsm.h>
+
 enum l2tpd_ctrl_con_event {
 #if 0
 	/* Local open request (not applicable on server */
