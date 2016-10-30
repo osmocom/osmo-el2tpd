@@ -69,7 +69,7 @@ enum l2tpd_configure_event {
 	/* received TC RP */
 	L2CONF_E_RX_TCRP,
 	/* l2tp session setted up */
-	L2CONF_E_RX_ICCN,
+	L2CONF_E_ESTABLISH_SESSION,
 	/* received ALTC RP */
 	L2CONF_E_RX_ALTCRP,
 	/* Local Close Request */
