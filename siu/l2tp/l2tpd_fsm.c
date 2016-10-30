@@ -107,8 +107,11 @@ struct osmo_fsm l2tp_cc_fsm = {
 
 static void l2tp_conf_s_init(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
+	struct l2tpd_connection *l2c = fi->priv;
+
 	switch (event) {
 		case L2CONF_E_TX_TCRQ:
+			l2tp_tx_tc_rq(l2c);
 			break;
 	}
 }
