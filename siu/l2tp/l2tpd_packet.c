@@ -619,14 +619,14 @@ static int rx_ic_rq(struct l2tpd_connection *l2cc, struct msgb *msg, struct avps
 	}
 
 	if (r_sess_id == 0) {
-		l2s = l2tpd_sess_alloc(l2cc);
+		l2s = l2tpd_sess_alloc(l2i, l2cc);
 		l2s->r_sess_id = l_sess_id;
 		avpp_val_u16(ap, VENDOR_IETF, AVP_IETF_PW_TYPE, &l2s->pw_type);
 		avpp_val_u8(ap, VENDOR_IETF, AVP_IETF_REMOTE_END, &l2s->remote_end_id);
 	} else {
 		LOGP(DL2TP, LOGL_NOTICE, "ccid %d: Received rx_ic_rq for already known session %u\n",
 		     l2cc->local.ccid, r_sess_id);
-		l2s = l2tpd_sess_find_by_l_s_id(l2cc, r_sess_id);
+		l2s = l2tpd_sess_find_by_l_s_id(l2i, r_sess_id);
 		if (!l2s) {
 			LOGP(DL2TP, LOGL_ERROR, "NoSession found for %u\n",
 				r_sess_id);
@@ -658,7 +658,7 @@ get_session_by_msg(struct l2tpd_connection *l2cc, struct msgb *msg,
 		return NULL;
 	}
 
-	l2s = l2tpd_sess_find_by_l_s_id(l2cc, r_sess_id);
+	l2s = l2tpd_sess_find_by_l_s_id(l2i, r_sess_id);
 	if (!l2s) {
 		LOGP(DL2TP, LOGL_ERROR, "ccid %d: Can not find session %d\n",
 		     l2cc->local.ccid, r_sess_id);
