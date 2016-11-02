@@ -126,3 +126,7 @@ enum l2tp_eric_ctrlmsg {
 	ERIC_CTRLMSG_ALTCRP	= 5,
 	ERIC_CTRLMSG_LCCSN	= 6,
 };
+
+#define TC_GROUP_TRAU 0x6
+#define TC_GROUP_PGSL 0x8
+#define TC_GROUP_RSL_OML 0x11

@@ -18,6 +18,7 @@
 #include "l2tpd.h"
 #include "l2tpd_data.h"
 #include "l2tpd_fsm.h"
+#include "l2tpd_lapd.h"
 #include "crc32.h"
 
 /***********************************************************************
@@ -886,10 +887,50 @@ static int l2tp_rcvmsg_control(struct msgb *msg)
 	return -1;
 }
 
-static int l2tp_rcvmsg_data(struct msgb *msg, bool ip_transport)
+static int l2tp_rcvmsg_data(struct msgb *msg)
 {
-	DEBUGP(DL2TP, "rx data: %s\n", msgb_hexdump(msg));
-	return 0;
+	struct l2tp_data_hdr *hdr;
+	struct l2tpd_session *l2s;
+	int len = msgb_length(msg);
+	uint32_t sequence_id = 0;
+
+	if (len < sizeof(*hdr)) {
+		LOGP(DL2TP, LOGL_INFO, "Received data packet which is to small %d < %d.\n", len, 12);
+		return -1;
+	}
+
+	hdr = (struct l2tp_data_hdr *) msgb_data(msg);
+	hdr->session_id = htonl(hdr->session_id);
+	hdr->sequence_id = htonl(hdr->sequence_id);
+	hdr->crc = htonl(hdr->crc);
+	sequence_id = hdr->sequence_id & L2TP_DATA_SEQ_ID_MASK;
+	msgb_pull(msg, sizeof(*hdr));
+
+	l2s = l2tpd_sess_find_by_l_s_id(l2i, hdr->session_id);
+	if (!l2s) {
+		LOGP(DL2TP, LOGL_INFO, "session %u: Received data packet for an unknown session.\n", hdr->session_id);
+		return -1;
+	}
+
+	if (!(hdr->sequence_id & L2TP_DATA_SEQ_BIT)) {
+		LOGP(DL2TP, LOGL_INFO, "session %u: Ignoring packets because of missing seq bit.\n", hdr->session_id);
+		return -1;
+	}
+
+	/* check sequence id */
+	if (sequence_id < l2s->next_rx_seq_nr) {
+		LOGP(DL2TP, LOGL_DEBUG, "session %d: Received old data packet %d.\n", l2s->l_sess_id, sequence_id);
+		return -1;
+	} else if (sequence_id > l2s->next_rx_seq_nr) {
+		LOGP(DL2TP, LOGL_DEBUG, "session %d: Received a data packet of the future %d.\n", l2s->l_sess_id, hdr->session_id);
+	} else {
+		l2s->next_rx_seq_nr++;
+	}
+
+	/* ignore crc on rx */
+	struct msgb *send_msg = msgb_copy(msg, "data_to_unix");
+
+	return lapd_ehdlc_to_lapd(l2i, l2s, send_msg);
 }
 
 int l2tp_rcvmsg(struct msgb *msg)
@@ -900,6 +941,7 @@ int l2tp_rcvmsg(struct msgb *msg)
 		msgb_pull(msg, sizeof(session));
 		return l2tp_rcvmsg_control(msg);
 	} else {
+		l2tp_rcvmsg_data(msg);
 		LOGP(DL2TP, LOGL_ERROR, "Received session %d data.\n", session);
 	}
 	return -1;

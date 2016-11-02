@@ -9,6 +9,8 @@
 #include <osmocom/core/msgb.h>
 #include <osmocom/core/select.h>
 
+#include "l2tpd_socket.h"
+
 static inline void *msgb_l2tph(struct msgb *msg)
 {
 	return msg->l2h;
@@ -73,6 +75,11 @@ struct l2tpd_session {
 	/* TODO: sockets for TRAU and PCU */
 };
 
+struct traffic_channel {
+	struct l2tp_socket_state state;
+	struct l2tpd_session *session;
+};
+
 struct l2tpd_instance {
 	/* list of l2tpd_connection */
 	struct llist_head connections;
@@ -81,11 +88,18 @@ struct l2tpd_instance {
 	/* next local session id */
 	uint32_t next_l_sess_id;
 
-
 	struct osmo_fd l2tp_ofd;
+	/* unix sockets */
+
+	struct traffic_channel rsl_oml;
+	struct traffic_channel trau;
+	struct traffic_channel pgsl;
 
 	struct {
 		const char *bind_ip;
+		const char *rsl_oml_path;
+		const char *pgsl_path;
+		const char *trau_path;
 	} cfg;
 };
 
