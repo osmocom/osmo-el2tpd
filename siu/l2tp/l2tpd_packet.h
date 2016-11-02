@@ -18,5 +18,6 @@ int l2tp_tx_ic_rp(struct l2tpd_session *l2s);
 int l2tp_tx_hello(struct l2tpd_session *l2s);
 
 int l2tp_rcvmsg(struct msgb *msg);
+int l2tp_tx_data(struct msgb *msg);
 
 struct msgb *l2tp_msgb_alloc(void);

@@ -18,6 +18,7 @@
 #include "l2tpd.h"
 #include "l2tpd_data.h"
 #include "l2tpd_fsm.h"
+#include "crc32.h"
 
 /***********************************************************************
  * AVP Parser / Encoder
@@ -310,6 +311,28 @@ static int l2tp_msgb_tx(struct msgb *msg, int not_ack)
 	ret = sendto(l2i->l2tp_ofd.fd, msgb_data(msg), msgb_length(msg), 0, &l2c->remote.ss, sizeof(l2c->remote.ss));
 
 	msgb_free(msg);
+	if (ret < 0)
+		return ret;
+	return 0;
+}
+
+int l2tp_tx_data(struct msgb *msg)
+{
+	struct l2tp_data_hdr *hdr;
+	struct l2tpd_session *l2s = msg->dst;
+	struct l2tpd_connection *l2c = l2s->connection;
+	int ret;
+	uint32_t crc;
+
+	hdr = (struct l2tp_data_hdr *) msgb_push(msg, sizeof(*hdr));
+	hdr->session_id = htonl(l2s->r_sess_id);
+	hdr->sequence_id = htonl(l2s->next_tx_seq_nr++ | L2TP_DATA_SEQ_BIT);
+	hdr->crc = 0;
+
+	crc = crc32(0x0, msgb_data(msg), (size_t) msgb_length(msg));
+	hdr->crc = htonl(crc);
+
+	ret = sendto(l2i->l2tp_ofd.fd, msgb_data(msg), msgb_length(msg), 0, &l2c->remote.ss, sizeof(l2c->remote.ss));
 	if (ret < 0)
 		return ret;
 	return 0;
