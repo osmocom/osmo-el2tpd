@@ -855,10 +855,22 @@ static int l2tp_rcvmsg_control(struct msgb *msg)
 		}
 
 		/* FIXME: do real seq numbering. check if already received etc. */
-		if (l2c->next_rx_seq_nr < (ch->Ns + 1))
-			l2c->next_rx_seq_nr =  ch->Ns + 1;
+		if (l2c->next_rx_seq_nr == ch->Ns) {
+			l2c->next_rx_seq_nr++;
+			/* everything ok */
+		} else if (l2c->next_rx_seq_nr < ch->Ns) {
+			/* old packet, we already received this one, but might not sent a ACK */
+			LOGP(DL2TP, LOGL_ERROR, "cid %d: wrong ch->Ns received. expectd %d != received %d.\n", l2c->local.ccid, l2c->next_rx_seq_nr, ch->Ns);
+		} else {
+			/* (l2c->next_rx_seq_nr > ch->Ns)
+			 * lost some packets. ignore */
+			LOGP(DL2TP, LOGL_ERROR, "cid %d: wrong ch->Ns received. expectd %d != received %d.\n", l2c->local.ccid, l2c->next_rx_seq_nr, ch->Ns);
+			return -1;
+		}
+
 		if (l2c->next_tx_seq_nr != ch->Nr)
-			LOGP(DL2TP, LOGL_ERROR, "cid %d: wrong seq number received. expectd %d != recveived %d.\n", l2c->local.ccid, l2c->next_tx_seq_nr, ch->Ns);
+			LOGP(DL2TP, LOGL_ERROR, "cid %d: wrong Nr received. expectd %d != received %d.\n", l2c->local.ccid, l2c->next_tx_seq_nr, ch->Nr);
+
 	}
 
 	LOGP(DL2TP, LOGL_ERROR, "Rx: l2tp vendor/type 0x%04x/0x%04x 0x%04x\n", first_avp->vendor_id, first_avp->type, msg_type);
