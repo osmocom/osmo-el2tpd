@@ -1,6 +1,8 @@
 
 #include <osmocom/core/fsm.h>
 
+#include "l2tp_protocol.h"
+
 #include "l2tpd.h"
 #include "l2tpd_packet.h"
 #include "l2tpd_data.h"
@@ -297,12 +299,25 @@ static void l2tp_ic_s_wait_conn(struct osmo_fsm_inst *fi, uint32_t event, void *
 		if (!l2tp_tx_ack(l2c)) {
 			osmo_fsm_inst_state_chg(fi, L2IC_S_ESTABLISHED, 0, 0);
 			osmo_fsm_inst_dispatch(l2c->conf_fsm, L2CONF_E_ESTABLISH_SESSION, data);
+			switch (l2s->remote_end_id) {
+				/* FIXME: kick out the old session */
+				case TC_GROUP_PGSL:
+					l2i->pgsl.session = l2s;
+					break;
+				case TC_GROUP_RSL_OML:
+					l2i->rsl_oml.session = l2s;
+					break;
+				case TC_GROUP_TRAU:
+					l2i->trau.session = l2s;
+					break;
+			}
 		}
 	}
 }
 
 static void l2tp_ic_s_established(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
+	/* FIXME: remove old session if it got dealloc from l2i->trau.session etc. */
 }
 
 

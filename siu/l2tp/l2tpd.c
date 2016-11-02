@@ -19,6 +19,8 @@
 #include "l2tpd_data.h"
 #include "l2tpd_fsm.h"
 #include "l2tpd_packet.h"
+#include "l2tpd_lapd.h"
+#include "l2tpd_socket.h"
 
 struct l2tpd_instance *l2i;
 /* FIXME: global static instance */
@@ -99,11 +101,13 @@ int main(int argc, char **argv)
 
 	l2i = talloc_zero(tall_l2tp_ctx, struct l2tpd_instance);
 	l2i->cfg.bind_ip = "0.0.0.0";
+	l2i->cfg.rsl_oml_path = "/tmp/rsl_oml";
+	l2i->cfg.pgsl_path = "/tmp/pgsl_oml";
+	l2i->cfg.trau_path = "/tmp/trau_oml";
 	/* connection id starts with 1 */
 	l2i->next_l_cc_id = 1;
 	/* session id starts with 1 */
 	l2i->next_l_sess_id = 1;
-
 
 	rc = l2tpd_instance_start(l2i);
 	if (rc < 0)
@@ -114,6 +118,13 @@ int main(int argc, char **argv)
 	log_add_target(stderr_target);
 	log_set_print_filename(stderr_target, 0);
 
+	l2tp_socket_init(&l2i->rsl_oml.state, l2i->cfg.rsl_oml_path, 100, DL2TP);
+	l2tp_socket_init(&l2i->trau.state, l2i->cfg.trau_path, 100, DL2TP);
+	l2tp_socket_init(&l2i->pgsl.state, l2i->cfg.pgsl_path, 100, DL2TP);
+
+	l2tp_set_read_callback(&l2i->rsl_oml.state, unix_rsl_oml_cb);
+	l2tp_set_read_callback(&l2i->pgsl.state, unix_rsl_oml_cb);
+	l2tp_set_read_callback(&l2i->trau.state, unix_rsl_oml_cb);
 
 	while (1) {
 		osmo_select_main(0);
