@@ -4,6 +4,15 @@
 #define IPPROTO_L2TP	115
 #endif
 
+struct l2tp_data_hdr {
+	uint32_t session_id; /* session and message type */\
+	uint32_t sequence_id; /* sequence number */
+	uint32_t crc;
+};
+
+#define L2TP_DATA_SEQ_ID_MASK 0xffffff
+#define L2TP_DATA_SEQ_BIT   0x40000000
+
 struct l2tp_control_hdr {
 	uint16_t ver;                   /* Version and more */
 	uint16_t length;                /* Length field */
