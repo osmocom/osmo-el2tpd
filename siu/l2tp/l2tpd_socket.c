@@ -79,11 +79,12 @@ int l2tp_socket_enqueue(struct l2tp_socket_state *state, struct msgb *msg)
  * \param sock_path
  * \return 0 on success
  */
-int l2tp_socket_init(struct l2tp_socket_state *state, const char *sock_path, int queue_len)
+int l2tp_socket_init(struct l2tp_socket_state *state, const char *sock_path, int queue_len, int log_class)
 {
 	struct osmo_fd *bfd;
 	int rc;
 
+	state->log_class = log_class;
 	osmo_wqueue_init(&state->wqueue, queue_len);
 	state->wqueue.bfd.fd = -1;
 

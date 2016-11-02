@@ -8,7 +8,7 @@ CFLAGS += $(EXTRA_CFLAGS)
 
 all: l2tpd
 
-l2tpd: l2tpd.o l2tpd_fsm.o l2tpd_data.o l2tpd_packet.o
+l2tpd: l2tpd.o l2tpd_fsm.o l2tpd_data.o l2tpd_packet.o l2tpd_socket.c
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 %.o: %.c
