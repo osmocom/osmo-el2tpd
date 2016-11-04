@@ -102,8 +102,8 @@ int main(int argc, char **argv)
 	l2i = talloc_zero(tall_l2tp_ctx, struct l2tpd_instance);
 	l2i->cfg.bind_ip = "0.0.0.0";
 	l2i->cfg.rsl_oml_path = "/tmp/rsl_oml";
-	l2i->cfg.pgsl_path = "/tmp/pgsl_oml";
-	l2i->cfg.trau_path = "/tmp/trau_oml";
+	l2i->cfg.pgsl_path = "/tmp/pgsl";
+	l2i->cfg.trau_path = "/tmp/trau";
 	/* connection id starts with 1 */
 	l2i->next_l_cc_id = 1;
 	/* session id starts with 1 */
