@@ -8,6 +8,7 @@
 #include <osmocom/core/logging.h>
 #include <osmocom/core/msgb.h>
 #include <osmocom/core/select.h>
+#include <osmocom/core/timer.h>
 
 #include "l2tpd_socket.h"
 
@@ -71,8 +72,10 @@ struct l2tpd_session {
 	uint8_t remote_end_id;
 	/* finite state machine for call/session */
 	struct osmo_fsm_inst *fsm;
-
+	/* send every X ms a xid request with window size */
+	struct osmo_timer_list  xid_timer;
 	/* TODO: sockets for TRAU and PCU */
+
 };
 
 struct traffic_channel {

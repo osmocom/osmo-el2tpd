@@ -207,6 +207,42 @@ int lapd_ehdlc_to_lapd(struct l2tpd_instance *l2i, struct l2tpd_session *l2s, st
 
 
 /*!
+ * \brief fill_xid write a ehdlc xid window request into msgb
+ * \param msg
+ * \param csapi
+ * \param ctei
+ * \return 0 on success
+ */
+int lapd_send_xid(struct l2tpd_instance *l2i, struct l2tpd_session *l2s, int sapi, int tei)
+{
+	struct msgb *msg = l2tp_msgb_alloc();
+	uint16_t ehdlc_compressed = 0;
+	int rc = 0;
+	uint8_t xid[14] = {
+		0xaf, 0x82, 0x80, /* U, XID, Unnumbered, */
+		0x00, 0x09, /* length */
+		0x07, 0x01, 0x10, /* transmit window size */
+		0x09, 0x01, 0x0e, /* timer (ms) */
+		0x08, 0x01, 0x03 }; /* receive window */
+	int length = ARRAY_SIZE(xid) + 2; /* add 2 byte for the ehdlc header itself */
+	int cr = 1;
+
+	ehdlc_compressed |= (sapi_to_csapi(sapi, cr) <<  EHDLC_CSAPI_SHIFT) & EHDLC_CSAPI_MASK;
+	ehdlc_compressed |= (tei_to_ctei(tei) <<  EHDLC_CTEI_SHIFT) & EHDLC_CTEI_MASK;
+	ehdlc_compressed |= length & EHDLC_LENGTH_MASK;
+
+	msgb_put_u16(msg, ehdlc_compressed);
+	memcpy(msgb_put(msg, ARRAY_SIZE(xid)), xid, ARRAY_SIZE(xid));
+	msg->dst = l2s;
+
+	rc = l2tp_tx_data(msg);
+	msgb_free(msg);
+	return rc;
+}
+
+
+
+/*!
  * \brief rsl_oml_cb called when data arrived on the unix socket
  * \param fd
  * \return 0 on success

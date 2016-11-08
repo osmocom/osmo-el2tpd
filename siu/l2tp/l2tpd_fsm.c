@@ -1,10 +1,12 @@
 
 #include <osmocom/core/fsm.h>
+#include <osmocom/core/timer.h>
 
 #include "l2tp_protocol.h"
 
 #include "l2tpd.h"
 #include "l2tpd_packet.h"
+#include "l2tpd_lapd.h"
 #include "l2tpd_data.h"
 #include "l2tpd_fsm.h"
 
@@ -320,6 +322,38 @@ static void l2tp_ic_s_established(struct osmo_fsm_inst *fi, uint32_t event, void
 	/* FIXME: remove old session if it got dealloc from l2i->trau.session etc. */
 }
 
+static void established_timer_cb(void *priv)
+{
+	struct l2tpd_session *l2s = priv;
+	switch (l2s->remote_end_id) {
+		case TC_GROUP_PGSL:
+			break;
+		case TC_GROUP_RSL_OML:
+//			lapd_send_xid(l2i, l2s, 00, 01);
+//			lapd_send_xid(l2i, l2s, 62, 62);
+//			lapd_send_xid(l2i, l2s, 62, 01);
+			break;
+		case TC_GROUP_TRAU:
+			break;
+	}
+	osmo_timer_schedule(&l2s->xid_timer, 0, 500 * 1000);
+}
+
+static void l2tp_ic_s_established_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
+{
+	struct l2tpd_session *l2s = (struct l2tpd_session *) fi->priv;
+	osmo_timer_schedule(&l2s->xid_timer, 0, 500 * 1000);
+
+	l2s->xid_timer.cb = established_timer_cb;
+	l2s->xid_timer.data = l2s;
+	/* start XID until received */
+}
+
+static void l2tp_ic_s_established_onleave(struct osmo_fsm_inst *fi, uint32_t prev_state)
+{
+	;
+}
+
 
 static const struct value_string l2tp_ic_names[] = {
 	{ L2IC_E_RX_ICRQ, "RX-InCall-Req" },
@@ -348,6 +382,8 @@ static const struct osmo_fsm_state l2tp_ic_states[] = {
 		.out_state_mask = 0,
 		.name = "ESTABLISHED",
 		.action = l2tp_ic_s_established,
+		.onenter = l2tp_ic_s_established_onenter,
+		.onleave = l2tp_ic_s_established_onleave,
 	},
 };
 
