@@ -223,9 +223,11 @@ int unix_rsl_oml_cb(struct osmo_fd *fd)
 	rc = read(fd->fd, msg->data, msg->data_len);
 	if (rc < 0) {
 		LOGP(DL2TP, LOGL_ERROR, "read failed %s\n", strerror(errno));
+		msgb_free(msg);
 		return rc;
 	} else if (rc == 0) {
 		LOGP(DL2TP, LOGL_ERROR, "closing socket because read 0 bytes\n");
+		msgb_free(msg);
 		l2tp_sock_cleanup(fd);
 		return 0;
 	}
@@ -246,6 +248,7 @@ int unix_rsl_oml_cb(struct osmo_fd *fd)
 		LOGP(DL2TP, LOGL_NOTICE, "lapd_to_ehlc returned != 0: %d.\n", rc);
 	}
 
+	msgb_free(msg);
 	return 0;
 }
 
