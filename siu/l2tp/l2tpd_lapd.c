@@ -191,7 +191,7 @@ int lapd_ehdlc_to_lapd(struct l2tpd_instance *l2i, struct l2tpd_session *l2s, st
 			return 0;
 		}
 
-		send_msg = msgb_alloc(length + 128, "lapd frame");
+		send_msg = l2tp_msgb_alloc();
 		memcpy(msgb_data(send_msg), msgb_data(msg), length);
 		msgb_pull(msg, length);
 		msgb_put(send_msg, length);
