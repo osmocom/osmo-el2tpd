@@ -851,7 +851,13 @@ static int l2tp_rcvmsg_control(struct msgb *msg)
 		l2c = l2tpd_cc_find_by_l_cc_id(l2i, ch->ccid);
 		if (!l2c) {
 			LOGP(DL2TP, LOGL_ERROR, "l2tp: can not find a connection for ccid %d\n", ch->ccid);
-			l2tp_tx_stop_ccn_msg(msg);
+			/* ignore acks */
+			if (first_avp->vendor_id != VENDOR_IETF ||
+			    first_avp->type != AVP_IETF_CTRL_MSG ||
+			    msg_type != IETF_CTRLMSG_ACK) {
+				l2tp_tx_stop_ccn_msg(msg);
+			}
+
 			return -1;
 		}
 
