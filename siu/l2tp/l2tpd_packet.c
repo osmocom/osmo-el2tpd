@@ -942,7 +942,6 @@ int l2tp_rcvmsg(struct msgb *msg)
 		return l2tp_rcvmsg_control(msg);
 	} else {
 		l2tp_rcvmsg_data(msg);
-		LOGP(DL2TP, LOGL_ERROR, "Received session %d data.\n", session);
 	}
 	return -1;
 }

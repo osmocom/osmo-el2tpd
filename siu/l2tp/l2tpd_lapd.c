@@ -263,9 +263,7 @@ int unix_rsl_oml_cb(struct osmo_fd *fd)
 		l2tp_sock_cleanup(fd);
 		return 0;
 	}
-	if (rc > 3) {
-		LOGP(DL2TP, LOGL_ERROR, "read %d\n", rc);
-	}
+
 	msgb_put(msg, rc);
 	msg->dst = channel->session;
 
