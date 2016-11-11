@@ -205,6 +205,38 @@ int lapd_ehdlc_to_lapd(struct l2tpd_instance *l2i, struct l2tpd_session *l2s, st
 	return 0;
 }
 
+/*!
+ * \brief lapd_switch_altc try to parse the msg, if valid it change the ALTC type to the requested
+ * \param l2i
+ * \param msg
+ * \return 1 if valid and parsed, 0 if should passthrough to the siu
+ */
+int lapd_switch_altc(struct l2tpd_instance *l2i, struct msgb *msg)
+{
+	struct l2tpd_session *l2s = msg->dst;
+
+	/* magic 0x23004200 (4 byte) + value (1 byte) */
+	if (msgb_length(msg) != (4 + 1))
+		return 0;
+
+	/* skip lapd header */
+	if (osmo_load32be(msgb_data(msg)) != 0x23004200)
+		return 0;
+
+	/* pull data pointer to next object */
+	msgb_pull(msg, 4);
+
+	if (msgb_pull_u8(msg)) {
+		LOGP(DL2TP, LOGL_INFO, "ALTCRQ -> SuperChannel requested\n");
+		l2tp_tx_altc_rq_superchannel(l2s->connection);
+	} else {
+		LOGP(DL2TP, LOGL_INFO, "ALTCRQ -> TimeSlot requested\n");
+		l2tp_tx_altc_rq_timeslot(l2s->connection);
+	}
+
+	return 1;
+}
+
 
 /*!
  * \brief rsl_oml_cb called when data arrived on the unix socket
@@ -241,6 +273,12 @@ int unix_rsl_oml_cb(struct osmo_fd *fd)
 		LOGP(DL2TP, LOGL_NOTICE, "Drop packets.\n");
 		msgb_free(msg);
 		return 1;
+	}
+
+	/* check if this packet is for us */
+	if (lapd_switch_altc(l2i, msg)) {
+		msgb_free(msg);
+		return 0;
 	}
 
 	rc = lapd_lapd_to_ehdlc(l2i, msg);
