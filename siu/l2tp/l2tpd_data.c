@@ -73,6 +73,8 @@ l2tpd_cc_alloc(struct l2tpd_instance *l2i)
 
 	INIT_LLIST_HEAD(&l2c->sessions);
 	l2c->local.ccid = l2i->next_l_cc_id++;
+	l2c->ack.timer.cb = l2tpd_explicit_ack_cb;
+	l2c->ack.timer.data = l2c;
 
 	snprintf(id_str, 12, "%d", l2c->local.ccid);
 

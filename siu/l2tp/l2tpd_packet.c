@@ -294,6 +294,12 @@ static int l2tp_msgb_tx(struct msgb *msg, int not_ack)
 	l2h->length = htons(msgb_length(msg));
 	l2h->ccid = htonl(l2c->remote.ccid);
 	l2h->Nr = htons(l2c->next_rx_seq_nr);
+
+	/* if we are implicitly ACKing this number, stop the timer that
+	 * would be senidng an explicit ack later */
+	if (not_ack && l2c->next_rx_seq_nr == l2c->ack.next_expected_nr)
+		osmo_timer_del(&l2c->ack.timer);
+
 	/* only acks dont increase seq */
 	if (not_ack)
 		l2h->Ns = htons(l2c->next_tx_seq_nr++);
@@ -795,6 +801,19 @@ static int l2tp_rcvmsg_control_ericsson(struct l2tpd_connection *l2c,
 	}
 }
 
+static void schedule_explicit_ack(struct l2tpd_connection *l2c, uint16_t next_expected_nr)
+{
+	l2c->ack.next_expected_nr = next_expected_nr;
+	osmo_timer_schedule(&l2c->ack.timer, 0, 20*1000);
+};
+
+/* call-back on explicit ACK timer expiration */
+void l2tpd_explicit_ack_cb(void *data)
+{
+	struct l2tpd_connection *l2c = data;
+	l2tp_tx_ack(l2c);
+}
+
 static int l2tp_rcvmsg_control(struct msgb *msg)
 {
 	struct l2tp_control_hdr *ch = (struct l2tp_control_hdr *) msgb_data(msg);
@@ -864,6 +883,7 @@ static int l2tp_rcvmsg_control(struct msgb *msg)
 		/* FIXME: do real seq numbering. check if already received etc. */
 		if (l2c->next_rx_seq_nr == ch->Ns) {
 			l2c->next_rx_seq_nr++;
+			schedule_explicit_ack(l2c, l2c->next_rx_seq_nr);
 			/* everything ok */
 		} else if (l2c->next_rx_seq_nr < ch->Ns) {
 			/* old packet, we already received this one, but might not sent a ACK */

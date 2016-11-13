@@ -8,6 +8,7 @@
 #include <osmocom/core/logging.h>
 #include <osmocom/core/msgb.h>
 #include <osmocom/core/select.h>
+#include <osmocom/core/timer.h>
 
 #include "l2tpd_socket.h"
 
@@ -48,6 +49,11 @@ struct l2tpd_connection {
 	struct osmo_fsm_inst *fsm;
 	/* finite state machine for traffic channels */
 	struct osmo_fsm_inst *conf_fsm;
+	/* acknowledgement timer for explicit ack */
+	struct {
+		struct osmo_timer_list timer;
+		uint16_t next_expected_nr;
+	} ack;
 };
 
 /* A L2TP session within a connection */
@@ -108,3 +114,5 @@ enum {
 };
 
 extern struct l2tpd_instance *l2i;
+
+extern void l2tpd_explicit_ack_cb(void *data);
