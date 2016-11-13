@@ -1,7 +1,6 @@
 #include <stdint.h>
 
 #include <stdio.h>
-#include <socket.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
