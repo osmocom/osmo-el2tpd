@@ -109,10 +109,6 @@ struct l2tpd_instance {
 	} cfg;
 };
 
-enum {
-	DL2TP,
-};
-
 extern struct l2tpd_instance *l2i;
 
 extern void l2tpd_explicit_ack_cb(void *data);

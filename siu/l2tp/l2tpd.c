@@ -20,6 +20,7 @@
 #include "l2tpd_fsm.h"
 #include "l2tpd_packet.h"
 #include "l2tpd_lapd.h"
+#include "l2tpd_logging.h"
 #include "l2tpd_socket.h"
 
 struct l2tpd_instance *l2i;
@@ -74,25 +75,13 @@ static int l2tpd_instance_start(struct l2tpd_instance *li)
 	return 0;
 }
 
-/* default categories */
-static struct log_info_cat l2tp_categories[] = {
-	[DL2TP] = {
-		.name = "DL2TP",
-		.description = "L2TP logging messages",
-		.enabled = 1, .loglevel = LOGL_DEBUG,
-	},
-};
-
-static const struct log_info l2tp_log_info = {
-	.cat = l2tp_categories,
-	.num_cat = ARRAY_SIZE(l2tp_categories),
-};
-
 int main(int argc, char **argv)
 {
 	int rc;
-	struct log_target *stderr_target;
+
 	void *tall_l2tp_ctx = talloc_named_const(NULL, 0, "l2tpd");
+
+	l2tpd_log_init();
 
 	/* register fsms */
 	osmo_fsm_register(&l2tp_cc_fsm);
@@ -112,11 +101,6 @@ int main(int argc, char **argv)
 	rc = l2tpd_instance_start(l2i);
 	if (rc < 0)
 		exit(1);
-
-	log_init(&l2tp_log_info, NULL);
-	stderr_target = log_target_create_stderr();
-	log_add_target(stderr_target);
-	log_set_print_filename(stderr_target, 0);
 
 	l2tp_socket_init(&l2i->rsl_oml.state, l2i->cfg.rsl_oml_path, 100, DL2TP);
 	l2tp_socket_init(&l2i->trau.state, l2i->cfg.trau_path, 100, DL2TP);

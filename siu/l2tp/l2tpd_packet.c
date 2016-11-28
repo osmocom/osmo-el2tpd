@@ -19,6 +19,7 @@
 #include "l2tpd_data.h"
 #include "l2tpd_fsm.h"
 #include "l2tpd_lapd.h"
+#include "l2tpd_logging.h"
 #include "crc32.h"
 
 /***********************************************************************

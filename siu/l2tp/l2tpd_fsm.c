@@ -7,6 +7,7 @@
 #include "l2tpd_packet.h"
 #include "l2tpd_data.h"
 #include "l2tpd_fsm.h"
+#include "l2tpd_logging.h"
 
 #define S(x)	(1 << (x))
 

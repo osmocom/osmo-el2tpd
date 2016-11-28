@@ -11,6 +11,7 @@
 #include "l2tpd_lapd.h"
 #include "l2tpd_packet.h"
 #include "l2tpd_socket.h"
+#include "l2tpd_logging.h"
 
 /* lapd and ehdlc differs in the first 16 bit
  * lapd saves tei, sapi, c/r bit, ea1, ea2 bit
