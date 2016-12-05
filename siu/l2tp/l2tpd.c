@@ -83,10 +83,6 @@ int main(int argc, char **argv)
 
 	l2tpd_log_init();
 
-	/* register fsms */
-	osmo_fsm_register(&l2tp_cc_fsm);
-	osmo_fsm_register(&l2tp_ic_fsm);
-	osmo_fsm_register(&l2tp_conf_fsm);
 
 	l2i = talloc_zero(tall_l2tp_ctx, struct l2tpd_instance);
 	l2i->cfg.bind_ip = "0.0.0.0";

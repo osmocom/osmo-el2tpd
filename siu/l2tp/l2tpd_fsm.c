@@ -361,3 +361,11 @@ struct osmo_fsm l2tp_ic_fsm = {
 	.allstate_event_mask = S(L2IC_E_RX_CDN) | S(L2IC_E_LOCAL_CLOSE_REQ),
 	.allstate_action = l2tp_ic_allstate,
 };
+
+static __attribute__((constructor)) void l2tp_fsm_init(void)
+{
+	/* register fsms */
+	osmo_fsm_register(&l2tp_cc_fsm);
+	osmo_fsm_register(&l2tp_ic_fsm);
+	osmo_fsm_register(&l2tp_conf_fsm);
+}
