@@ -543,7 +543,7 @@ static int rx_scc_rq(struct l2tpd_connection *l2c, struct msgb *msg, struct avps
 	/* Abort if Pseudowire capability doesn't include 6(HDLC) */
 	if (avpp_val_u16(ap, VENDOR_IETF, AVP_IETF_PW_CAP_LIST, &pw) < 0 ||
 	    pw != 0x0006) {
-		LOGP(DL2TP, LOGL_ERROR, "Pseudowire != HDLC\n");
+		LOGP(DL2TP, LOGL_ERROR, "Rx SCCRQ: Pseudowire != HDLC\n");
 		return -1;
 	}
 
@@ -616,12 +616,12 @@ static int rx_ic_rq(struct l2tpd_connection *l2cc, struct msgb *msg, struct avps
 	if (!l2cc)
 		return -1;
 	if (avpp_val_u32(ap, VENDOR_IETF, AVP_IETF_REM_SESS_ID, &r_sess_id)) {
-		LOGP(DL2TP, LOGL_ERROR, "ccid %d: Missing AVP REM_SESS_ID\n",
+		LOGP(DL2TP, LOGL_ERROR, "Rx ICRQ: ccid %d: Missing AVP REM_SESS_ID\n",
 		     l2cc->local.ccid);
 		return -1;
 	}
 	if (avpp_val_u32(ap, VENDOR_IETF, AVP_IETF_LOC_SESS_ID, &l_sess_id)) {
-		LOGP(DL2TP, LOGL_ERROR, "ccid %d: Missing AVP LOC_SESS_ID\n",
+		LOGP(DL2TP, LOGL_ERROR, "Rx ICRQ: ccid %d: Missing AVP LOC_SESS_ID\n",
 		     l2cc->local.ccid);
 		return -1;
 	}
@@ -632,11 +632,11 @@ static int rx_ic_rq(struct l2tpd_connection *l2cc, struct msgb *msg, struct avps
 		avpp_val_u16(ap, VENDOR_IETF, AVP_IETF_PW_TYPE, &l2s->pw_type);
 		avpp_val_u8(ap, VENDOR_IETF, AVP_IETF_REMOTE_END, &l2s->remote_end_id);
 	} else {
-		LOGP(DL2TP, LOGL_NOTICE, "ccid %d: Received rx_ic_rq for already known session %u\n",
+		LOGP(DL2TP, LOGL_NOTICE, "Rx ICRQ: ccid %d: Received rx_ic_rq for already known session %u\n",
 		     l2cc->local.ccid, r_sess_id);
 		l2s = l2tpd_sess_find_by_l_s_id(l2i, r_sess_id);
 		if (!l2s) {
-			LOGP(DL2TP, LOGL_ERROR, "NoSession found for %u\n",
+			LOGP(DL2TP, LOGL_ERROR, "Rx ICRQ: NoSession found for %u\n",
 				r_sess_id);
 			/* FIXME: send error packet */
 			return -1;
@@ -748,12 +748,12 @@ static int rx_eri_tcrp(struct l2tpd_connection *l2c, struct msgb *msg, struct av
 		return -1;
 
 	if (avpp_val_u16(ap, VENDOR_IETF, AVP_IETF_RESULT_CODE, &avp_result)) {
-		LOGP(DL2TP, LOGL_ERROR, "TXRP doesnt contain a result code. Aborting control connection.\n");
+		LOGP(DL2TP, LOGL_ERROR, "Rx TCRP: doesnt contain a result code. Aborting control connection.\n");
 		osmo_fsm_inst_dispatch(l2c->fsm, L2CC_E_LOCAL_CLOSE_REQ, msg);
 	}
 
 	if (avp_result) {
-		LOGP(DL2TP, LOGL_ERROR, "TXRP returned result code %d instead of 0. Aborting control connection.\n",
+		LOGP(DL2TP, LOGL_ERROR, "Rx TCRP: returned result code %d instead of 0. Aborting control connection.\n",
 		     avp_result);
 		/* FIXME: result message */
 		osmo_fsm_inst_dispatch(l2c->fsm, L2CC_E_LOCAL_CLOSE_REQ, msg);
@@ -770,12 +770,12 @@ static int rx_eri_altcrp(struct l2tpd_connection *l2c, struct msgb *msg, struct 
 		return -1;
 
 	if (avpp_val_u16(ap, VENDOR_IETF, AVP_IETF_RESULT_CODE, &avp_result)) {
-		LOGP(DL2TP, LOGL_ERROR, "ALTXRP doesnt contain a result code. Aborting control connection.\n");
+		LOGP(DL2TP, LOGL_ERROR, "Rx ALTCRP: doesnt contain a result code. Aborting control connection.\n");
 		osmo_fsm_inst_dispatch(l2c->fsm, L2CC_E_LOCAL_CLOSE_REQ, msg);
 	}
 
 	if (avp_result) {
-		LOGP(DL2TP, LOGL_ERROR, "ALTXRP returned result code %d instead of 0. Aborting control connection.\n",
+		LOGP(DL2TP, LOGL_ERROR, "Rx ALTCRP: returned result code %d instead of 0. Aborting control connection.\n",
 		     avp_result);
 		/* FIXME: result message */
 		osmo_fsm_inst_dispatch(l2c->fsm, L2CC_E_LOCAL_CLOSE_REQ, msg);
@@ -789,7 +789,7 @@ static int l2tp_rcvmsg_control_ericsson(struct l2tpd_connection *l2c,
 					struct msgb *msg, struct avps_parsed *ap,
 					uint16_t msg_type)
 {
-	LOGP(DL2TP, LOGL_ERROR, "Rx: ericsson msg_type 0x%04x\n", msg_type);
+	LOGP(DL2TP, LOGL_DEBUG, "Rx: ericsson msg_type 0x%04x\n", msg_type);
 	switch (msg_type) {
 	case ERIC_CTRLMSG_TCRP:
 		return rx_eri_tcrp(l2c, msg, ap);
@@ -827,39 +827,39 @@ static int l2tp_rcvmsg_control(struct msgb *msg)
 	l2tp_hdr_swap(ch);
 
 	if ((ch->ver & VER_MASK) != 3) {
-		LOGP(DL2TP, LOGL_ERROR, "L2TP Version != 3\n");
+		LOGP(DL2TP, LOGL_ERROR, "Rx ctrl: L2TP Version != 3\n");
 		return -1;
 	}
 
 	if ((ch->ver & (T_BIT|L_BIT|S_BIT)) != (T_BIT|L_BIT|S_BIT)) {
-		LOGP(DL2TP, LOGL_ERROR, "L2TP Bits wrong\n");
+		LOGP(DL2TP, LOGL_ERROR, "Rx ctrl: L2TP Bits wrong\n");
 		return -1;
 	}
 
 	if (ch->ver & Z_BITS) {
-		LOGP(DL2TP, LOGL_ERROR, "L2TP Z bit must not be set\n");
+		LOGP(DL2TP, LOGL_ERROR, "Rx ctrl: L2TP Z bit must not be set\n");
 		return -1;
 	}
 
 	if (msgb_l2tplen(msg) < ch->length) {
-		LOGP(DL2TP, LOGL_ERROR, "L2TP message length beyond msgb\n");
+		LOGP(DL2TP, LOGL_ERROR, "Rx ctrl: L2TP message length beyond msgb\n");
 		return -1;
 	}
 
 	/* Parse the first AVP an see if it is Control Message */
 	rc = msgb_avps_parse(&ap, msg, sizeof(*ch));
 	if (rc < 0) {
-		LOGP(DL2TP, LOGL_ERROR, "Error in parsing AVPs\n");
+		LOGP(DL2TP, LOGL_ERROR, "Rx ctrl: Error in parsing AVPs\n");
 		return rc;
 	}
 	if (ap.num_avp <= 0) {
-		LOGP(DL2TP, LOGL_ERROR, "Not at least one AVP\n");
+		LOGP(DL2TP, LOGL_ERROR, "Rx ctrl: Not at least one AVP\n");
 		return -1;
 	}
 	first_avp = &ap.avp[0];
 
 	if (first_avp->data_len != 2) {
-		LOGP(DL2TP, LOGL_ERROR, "Control Msg AVP length !=2: %u\n",
+		LOGP(DL2TP, LOGL_ERROR, "Rx ctrl: First AVP length != 2: %u\n",
 			first_avp->data_len);
 		return -1;
 	}
@@ -887,21 +887,21 @@ static int l2tp_rcvmsg_control(struct msgb *msg)
 			schedule_explicit_ack(l2c, l2c->next_rx_seq_nr);
 			/* everything ok */
 		} else if (l2c->next_rx_seq_nr < ch->Ns) {
-			/* old packet, we already received this one, but might not sent a ACK */
-			LOGP(DL2TP, LOGL_ERROR, "cid %d: wrong ch->Ns received. expectd %d != received %d.\n", l2c->local.ccid, l2c->next_rx_seq_nr, ch->Ns);
+			/* old packet, we already received this one, but might not sent a ACK. So the sender did not received our package */
+			LOGP(DL2TP, LOGL_ERROR, "Rx ctrl: cid %d: wrong ch->Ns received. expectd %d != received %d.\n", l2c->local.ccid, l2c->next_rx_seq_nr, ch->Ns);
 		} else {
 			/* (l2c->next_rx_seq_nr > ch->Ns)
 			 * lost some packets. ignore */
-			LOGP(DL2TP, LOGL_ERROR, "cid %d: wrong ch->Ns received. expectd %d != received %d.\n", l2c->local.ccid, l2c->next_rx_seq_nr, ch->Ns);
+			LOGP(DL2TP, LOGL_ERROR, "Rx ctrl: cid %d: wrong ch->Ns received. expectd %d != received %d.\n", l2c->local.ccid, l2c->next_rx_seq_nr, ch->Ns);
 			return -1;
 		}
 
 		if (l2c->next_tx_seq_nr != ch->Nr)
-			LOGP(DL2TP, LOGL_ERROR, "cid %d: wrong Nr received. expectd %d != received %d.\n", l2c->local.ccid, l2c->next_tx_seq_nr, ch->Nr);
+			LOGP(DL2TP, LOGL_ERROR, "Rx ctrl: cid %d: wrong Nr received. expectd %d != received %d.\n", l2c->local.ccid, l2c->next_tx_seq_nr, ch->Nr);
 
 	}
 
-	LOGP(DL2TP, LOGL_ERROR, "Rx: l2tp vendor/type 0x%04x/0x%04x 0x%04x\n", first_avp->vendor_id, first_avp->type, msg_type);
+	LOGP(DL2TP, LOGL_DEBUG, "Rx: l2tp vendor/type 0x%04x/0x%04x 0x%04x\n", first_avp->vendor_id, first_avp->type, msg_type);
 
 	if (first_avp->vendor_id == VENDOR_IETF &&
 	    first_avp->type == AVP_IETF_CTRL_MSG)
@@ -922,7 +922,7 @@ static int l2tp_rcvmsg_data(struct msgb *msg)
 	uint32_t sequence_id = 0;
 
 	if (len < sizeof(*hdr)) {
-		LOGP(DL2TP, LOGL_INFO, "Received data packet which is to small %d < %d.\n", len, 12);
+		LOGP(DL2TP, LOGL_INFO, "Rx data: Received data packet which is to small %d < %d.\n", len, 12);
 		return -1;
 	}
 
@@ -935,21 +935,21 @@ static int l2tp_rcvmsg_data(struct msgb *msg)
 
 	l2s = l2tpd_sess_find_by_l_s_id(l2i, hdr->session_id);
 	if (!l2s) {
-		LOGP(DL2TP, LOGL_INFO, "session %u: Received data packet for an unknown session.\n", hdr->session_id);
+		LOGP(DL2TP, LOGL_INFO, "Rx data %u: Received data packet for an unknown session.\n", hdr->session_id);
 		return -1;
 	}
 
 	if (!(hdr->sequence_id & L2TP_DATA_SEQ_BIT)) {
-		LOGP(DL2TP, LOGL_INFO, "session %u: Ignoring packets because of missing seq bit.\n", hdr->session_id);
+		LOGP(DL2TP, LOGL_INFO, "Rx data %u: Ignoring packets because of missing seq bit.\n", hdr->session_id);
 		return -1;
 	}
 
 	/* check sequence id */
 	if (sequence_id < l2s->next_rx_seq_nr) {
-		LOGP(DL2TP, LOGL_DEBUG, "session %d: Received old data packet %d.\n", l2s->l_sess_id, sequence_id);
+		LOGP(DL2TP, LOGL_DEBUG, "Rx data %u: Received old data packet %d.\n", l2s->l_sess_id, sequence_id);
 		return -1;
 	} else if (sequence_id > l2s->next_rx_seq_nr) {
-		LOGP(DL2TP, LOGL_DEBUG, "session %d: Received a data packet of the future %d.\n", l2s->l_sess_id, hdr->session_id);
+		LOGP(DL2TP, LOGL_DEBUG, "Rx data %u: Received a data packet of the future %d.\n", l2s->l_sess_id, hdr->session_id);
 	} else {
 		l2s->next_rx_seq_nr++;
 	}
