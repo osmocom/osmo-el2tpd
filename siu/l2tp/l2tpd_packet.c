@@ -954,9 +954,7 @@ static int l2tp_rcvmsg_data(struct msgb *msg)
 	}
 
 	/* ignore crc on rx */
-	struct msgb *send_msg = msgb_copy(msg, "data_to_unix");
-
-	return lapd_ehdlc_to_lapd(l2i, l2s, send_msg);
+	return lapd_ehdlc_to_lapd(l2i, l2s, msg);
 }
 
 int l2tp_rcvmsg(struct msgb *msg)
