@@ -169,7 +169,7 @@ int lapd_ehdlc_to_lapd(struct l2tpd_instance *l2i, struct l2tpd_session *l2s, st
 	}
 
 	if (!channel) {
-		LOGP(DL2TP, LOGL_NOTICE, "Can not find traffic channel for session %d\n", l2s->l_sess_id);
+		LOGP(DL2TP, LOGL_NOTICE, "eh2lapd: Can not find traffic channel for session %d\n", l2s->l_sess_id);
 		return -1;
 	}
 
@@ -190,7 +190,7 @@ int lapd_ehdlc_to_lapd(struct l2tpd_instance *l2i, struct l2tpd_session *l2s, st
 		osmo_store16be(lapd_address, msgb_data(msg));
 
 		if (length > msgb_length(msg)) {
-			LOGP(DL2TP, LOGL_NOTICE, "Can not parse msg as ehdlc because its to short. %d > %d.\n", length, msgb_length(msg));
+			LOGP(DL2TP, LOGL_NOTICE, "eh2lapd: Can not parse msg as ehdlc because its to short. %d > %d.\n", length, msgb_length(msg));
 			return 0;
 		}
 
@@ -207,7 +207,7 @@ int lapd_ehdlc_to_lapd(struct l2tpd_instance *l2i, struct l2tpd_session *l2s, st
 	}
 
 	if (msgb_length(msg) > 0)
-		LOGP(DL2TP, LOGL_NOTICE, "ehdlc_to_lapd: bytes leftover after parsing %d.\n", msgb_length(msg));
+		LOGP(DL2TP, LOGL_NOTICE, "eh2lapd: bytes leftover after parsing %d.\n", msgb_length(msg));
 
 	return 0;
 }
