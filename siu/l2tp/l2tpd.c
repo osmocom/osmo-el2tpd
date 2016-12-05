@@ -1,6 +1,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
+#include <signal.h>
+#include <unistd.h>
 
 #include <arpa/inet.h>
 
@@ -13,6 +15,7 @@
 #include <osmocom/core/select.h>
 #include <osmocom/core/socket.h>
 #include <osmocom/core/fsm.h>
+#include <osmocom/core/signal.h>
 
 #include "l2tp_protocol.h"
 #include "l2tpd.h"
@@ -23,6 +26,7 @@
 #include "l2tpd_logging.h"
 #include "l2tpd_socket.h"
 
+void *tall_l2tp_ctx;
 struct l2tpd_instance *l2i;
 /* FIXME: global static instance */
 
@@ -75,13 +79,43 @@ static int l2tpd_instance_start(struct l2tpd_instance *li)
 	return 0;
 }
 
+static void signal_handler(int signal)
+{
+	fprintf(stdout, "signal %u received\n", signal);
+
+	switch (signal) {
+	case SIGINT:
+		osmo_signal_dispatch(SS_L_GLOBAL, S_L_GLOBAL_SHUTDOWN, NULL);
+		sleep(1);
+		exit(0);
+		break;
+	case SIGABRT:
+		/* in case of abort, we want to obtain a talloc report
+		 * and then return to the caller, who will abort the process */
+	case SIGUSR1:
+		/* FIXME: call vty report when implementing vty */
+		// talloc_report(tall_vty_ctx, stderr);
+		talloc_report_full(tall_l2tp_ctx, stderr);
+		break;
+	case SIGUSR2:
+		// talloc_report_full(tall_vty_ctx, stderr);
+		break;
+	default:
+		break;
+	}
+}
+
 int main(int argc, char **argv)
 {
 	int rc;
 
-	void *tall_l2tp_ctx = talloc_named_const(NULL, 0, "l2tpd");
+	tall_l2tp_ctx = talloc_named_const(NULL, 0, "l2tpd");
 	msgb_talloc_ctx_init(tall_l2tp_ctx, 0);
 
+	signal(SIGINT, &signal_handler);
+	signal(SIGABRT, &signal_handler);
+	signal(SIGUSR1, &signal_handler);
+	signal(SIGUSR2, &signal_handler);
 	l2tpd_log_init();
 
 
