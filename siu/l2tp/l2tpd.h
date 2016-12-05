@@ -84,6 +84,7 @@ struct l2tpd_session {
 struct traffic_channel {
 	struct l2tp_socket_state state;
 	struct l2tpd_session *session;
+	const char *name;
 };
 
 struct l2tpd_instance {

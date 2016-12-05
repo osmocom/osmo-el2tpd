@@ -255,11 +255,11 @@ int unix_rsl_oml_cb(struct osmo_fd *fd)
 
 	rc = read(fd->fd, msg->data, msg->data_len);
 	if (rc < 0) {
-		LOGP(DL2TP, LOGL_ERROR, "read failed %s\n", strerror(errno));
+		LOGP(DL2TP, LOGL_ERROR, "%s: read failed %s\n", channel->name, strerror(errno));
 		msgb_free(msg);
 		return rc;
 	} else if (rc == 0) {
-		LOGP(DL2TP, LOGL_ERROR, "closing socket because read 0 bytes\n");
+		LOGP(DL2TP, LOGL_ERROR, "%s: closing socket because read 0 bytes\n", channel->name);
 		msgb_free(msg);
 		l2tp_sock_cleanup(fd);
 		return 0;
@@ -269,7 +269,7 @@ int unix_rsl_oml_cb(struct osmo_fd *fd)
 	msg->dst = channel->session;
 
 	if (!channel->session) {
-		LOGP(DL2TP, LOGL_NOTICE, "Drop packets.\n");
+		LOGP(DL2TP, LOGL_DEBUG, "%s: Drop incoming packet session is full\n", channel->name);
 		msgb_free(msg);
 		return 1;
 	}
@@ -282,7 +282,7 @@ int unix_rsl_oml_cb(struct osmo_fd *fd)
 
 	rc = lapd_lapd_to_ehdlc(l2i, msg);
 	if (rc) {
-		LOGP(DL2TP, LOGL_NOTICE, "lapd_to_ehlc returned != 0: %d.\n", rc);
+		LOGP(DL2TP, LOGL_NOTICE, "%s: lapd_to_ehlc returned != 0: %d.\n", channel->name, rc);
 	}
 
 	msgb_free(msg);

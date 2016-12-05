@@ -133,6 +133,9 @@ int main(int argc, char **argv)
 	if (rc < 0)
 		exit(1);
 
+	l2i->rsl_oml.name = "RSL/OML";
+	l2i->trau.name = "TRAU";
+	l2i->pgsl.name = "P/GSL";
 	l2tp_socket_init(&l2i->rsl_oml.state, l2i->cfg.rsl_oml_path, 100, DL2TP);
 	l2tp_socket_init(&l2i->trau.state, l2i->cfg.trau_path, 100, DL2TP);
 	l2tp_socket_init(&l2i->pgsl.state, l2i->cfg.pgsl_path, 100, DL2TP);
