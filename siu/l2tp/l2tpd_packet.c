@@ -581,7 +581,6 @@ static int rx_scc_cn(struct l2tpd_connection *l2cc, struct msgb *msg, struct avp
 		return -1;
 
 	osmo_fsm_inst_dispatch(l2cc->fsm, L2CC_E_RX_SCCCN, msg);
-	/* FIXME: Send TCRQ and ALTCRQ */
 	return 0;
 }
 
