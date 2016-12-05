@@ -152,6 +152,7 @@ int lapd_lapd_to_ehdlc(struct l2tpd_instance *l2i, struct msgb *msg)
  */
 int lapd_ehdlc_to_lapd(struct l2tpd_instance *l2i, struct l2tpd_session *l2s, struct msgb *msg)
 {
+	int ret = 0;
 	struct traffic_channel *channel = NULL;
 	switch (l2s->remote_end_id) {
 		case TC_GROUP_PGSL:
@@ -197,7 +198,11 @@ int lapd_ehdlc_to_lapd(struct l2tpd_instance *l2i, struct l2tpd_session *l2s, st
 		msgb_pull(msg, length);
 		msgb_put(send_msg, length);
 
-		l2tp_socket_enqueue(&channel->state, send_msg);
+		ret = l2tp_socket_enqueue(&channel->state, send_msg);
+		if (ret < 0) {
+			/* queue is full or other error, we have to free send_msg on our own.*/
+			msgb_free(send_msg);
+		}
 	}
 
 	if (msgb_length(msg) > 0)
