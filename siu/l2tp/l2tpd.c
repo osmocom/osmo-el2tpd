@@ -33,7 +33,7 @@ struct l2tpd_instance *l2i;
 static int l2tp_ip_read_cb(struct osmo_fd *ofd, unsigned int what)
 {
 	struct msgb *msg = l2tp_msgb_alloc();
-	struct sockaddr ss;
+	struct sockaddr ss = { 0 };
 	socklen_t ss_len = sizeof(ss);
 	int rc;
 
