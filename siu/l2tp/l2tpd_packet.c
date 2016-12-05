@@ -805,7 +805,7 @@ static void schedule_explicit_ack(struct l2tpd_connection *l2c, uint16_t next_ex
 {
 	l2c->ack.next_expected_nr = next_expected_nr;
 	osmo_timer_schedule(&l2c->ack.timer, 0, 20*1000);
-};
+}
 
 /* call-back on explicit ACK timer expiration */
 void l2tpd_explicit_ack_cb(void *data)
