@@ -144,7 +144,8 @@ int lapd_lapd_to_ehdlc(struct l2tpd_instance *l2i, struct msgb *msg)
 }
 
 /*!
- * \brief lapd_ehdlc_to_lapd
+ * \brief lapd_ehdlc_to_lapd convert a EDHLC message to LAPD message
+ *  and enqueue the message for transmit over the unix socket.
  * \param l2i
  * \param session which received the packets
  * \param msg
