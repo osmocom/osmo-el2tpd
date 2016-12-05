@@ -80,6 +80,7 @@ int main(int argc, char **argv)
 	int rc;
 
 	void *tall_l2tp_ctx = talloc_named_const(NULL, 0, "l2tpd");
+	msgb_talloc_ctx_init(tall_l2tp_ctx, 0);
 
 	l2tpd_log_init();
 
