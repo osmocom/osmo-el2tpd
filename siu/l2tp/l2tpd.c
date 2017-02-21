@@ -140,9 +140,9 @@ int main(int argc, char **argv)
 	l2tp_socket_init(&l2i->trau.state, l2i->cfg.trau_path, 100, DL2TP);
 	l2tp_socket_init(&l2i->pgsl.state, l2i->cfg.pgsl_path, 100, DL2TP);
 
-	l2tp_set_read_callback(&l2i->rsl_oml.state, unix_rsl_oml_cb);
-	l2tp_set_read_callback(&l2i->pgsl.state, unix_rsl_oml_cb);
-	l2tp_set_read_callback(&l2i->trau.state, unix_rsl_oml_cb);
+	l2tp_set_read_callback(&l2i->rsl_oml.state, unix_read_cb);
+	l2tp_set_read_callback(&l2i->pgsl.state, unix_read_cb);
+	l2tp_set_read_callback(&l2i->trau.state, unix_read_cb);
 
 	while (1) {
 		osmo_select_main(0);

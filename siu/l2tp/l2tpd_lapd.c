@@ -246,11 +246,11 @@ int lapd_switch_altc(struct l2tpd_instance *l2i, struct msgb *msg)
 
 
 /*!
- * \brief rsl_oml_cb called when data arrived on the unix socket
+ * \brief unix_read_cb called when data arrived on the unix socket
  * \param fd
  * \return 0 on success
  */
-int unix_rsl_oml_cb(struct osmo_fd *fd)
+int unix_read_cb(struct osmo_fd *fd)
 {
 	struct msgb *msg = l2tp_msgb_alloc();
 	int rc;
