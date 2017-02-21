@@ -85,6 +85,9 @@ struct traffic_channel {
 	struct l2tp_socket_state state;
 	struct l2tpd_session *session;
 	const char *name;
+	/* does this channel use on the unix socket
+	 * a custom header? */
+	int version_control_header;
 };
 
 struct l2tpd_instance {

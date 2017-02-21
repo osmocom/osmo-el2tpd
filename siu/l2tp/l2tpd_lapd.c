@@ -13,6 +13,8 @@
 #include "l2tpd_socket.h"
 #include "l2tpd_logging.h"
 
+#include "unixsocket_proto.h"
+
 /* lapd and ehdlc differs in the first 16 bit
  * lapd saves tei, sapi, c/r bit, ea1, ea2 bit
  * ehdlc saves tei, sapi, c/r and length in a compressed way,
@@ -199,6 +201,11 @@ int lapd_ehdlc_to_lapd(struct l2tpd_instance *l2i, struct l2tpd_session *l2s, st
 		msgb_pull(msg, length);
 		msgb_put(send_msg, length);
 
+		if (channel->version_control_header) {
+			msgb_push_u8(send_msg, UNIXSOCKET_PROTO_DATA);
+			msgb_push_u8(send_msg, UNIXSOCKET_PROTO_VERSION);
+		}
+
 		ret = l2tp_socket_enqueue(&channel->state, send_msg);
 		if (ret < 0) {
 			/* queue is full or other error, we have to free send_msg on our own.*/
@@ -213,22 +220,54 @@ int lapd_ehdlc_to_lapd(struct l2tpd_instance *l2i, struct l2tpd_session *l2s, st
 }
 
 /*!
- * \brief lapd_switch_altc try to parse the msg, if valid it change the ALTC type to the requested
+ * \brief lapd_process_version_header parse the extra version controldata header
+ * if the header is valid and contains data -> pass to siu (return 0)
+ * if header is invalid or contains control data -> dont passed to siu (return 1)
  * \param l2i
  * \param msg
- * \return 1 if valid and parsed, 0 if should passthrough to the siu
+ * \return 0 if should passthrough to the siu, 1 if processed or invalid
  */
-int lapd_switch_altc(struct l2tpd_instance *l2i, struct msgb *msg)
+int lapd_process_version_header(struct l2tpd_instance *l2i, struct msgb *msg)
 {
 	struct l2tpd_session *l2s = msg->dst;
+	uint8_t version = 0;
+	uint8_t datacontrol = 0;
+
+	/* msgb must contain version + controldata byte */
+	if (msgb_length(msg) < 2) {
+		/* invalid packet. drop it */
+		return 1;
+	}
+
+	version = msgb_pull_u8(msg);
+	datacontrol = msgb_pull_u8(msg);
+
+	if (version != UNIXSOCKET_PROTO_VERSION) {
+		LOGP(DL2TP, LOGL_ERROR, "Invalid packet version received: %d. Expected %d.\n",
+		     version, UNIXSOCKET_PROTO_VERSION);
+		return 1;
+	}
+
+	switch(datacontrol) {
+	case UNIXSOCKET_PROTO_DATA:
+		/* pass it to siu */
+		msg->l2h = msg->data;
+		return 0;
+	case UNIXSOCKET_PROTO_CONTROL:
+		break; /* handle later */
+	default:
+		LOGP(DL2TP, LOGL_ERROR, "Invalid packet received.\n");
+		return 1;
+	}
+
+	/* only alt tc supported in version 1 */
 
 	/* magic 0x23004200 (4 byte) + value (1 byte) */
 	if (msgb_length(msg) != (4 + 1))
-		return 0;
+		return 1; /* drop packet */
 
-	/* skip lapd header */
 	if (osmo_load32be(msgb_data(msg)) != 0x23004200)
-		return 0;
+		return 1; /* drop packet */
 
 	/* pull data pointer to next object */
 	msgb_pull(msg, 4);
@@ -280,10 +319,13 @@ int unix_read_cb(struct osmo_fd *fd)
 	}
 	msg->dst = channel->session;
 
-	/* check if this packet is for us */
-	if (lapd_switch_altc(l2i, msg)) {
-		msgb_free(msg);
-		return 0;
+	/* only the rsl_oml has an additional header */
+	if (channel->version_control_header) {
+		if (lapd_process_version_header(l2i, msg)) {
+			/* msg got processed and is finished. */
+			msgb_free(msg);
+			return 0;
+		}
 	}
 
 	rc = lapd_lapd_to_ehdlc(l2i, msg);
