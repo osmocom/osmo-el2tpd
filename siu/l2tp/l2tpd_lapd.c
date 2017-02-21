@@ -294,13 +294,3 @@ int unix_rsl_oml_cb(struct osmo_fd *fd)
 	msgb_free(msg);
 	return 0;
 }
-
-int unix_trau_cb(struct osmo_fd *fd)
-{
-	return 0;
-}
-
-int unix_pgsl_cb(struct osmo_fd *fd)
-{
-	return 0;
-}
