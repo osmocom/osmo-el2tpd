@@ -272,13 +272,13 @@ int unix_rsl_oml_cb(struct osmo_fd *fd)
 	}
 
 	msgb_put(msg, rc);
-	msg->dst = channel->session;
 
 	if (!channel->session) {
 		LOGP(DL2TP, LOGL_DEBUG, "%s: Drop incoming packet session is full\n", channel->name);
 		msgb_free(msg);
 		return 1;
 	}
+	msg->dst = channel->session;
 
 	/* check if this packet is for us */
 	if (lapd_switch_altc(l2i, msg)) {
