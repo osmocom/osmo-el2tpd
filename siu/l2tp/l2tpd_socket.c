@@ -151,6 +151,6 @@ int l2tp_socket_init(struct l2tp_socket_state *state, const char *sock_path, int
 		return rc;
 	}
 
-	LOGP(state->log_class, LOGL_NOTICE, "MNCC socket at %s\n", sock_path);
+	LOGP(state->log_class, LOGL_NOTICE, "unix domain socket at %s\n", sock_path);
 	return 0;
 }
