@@ -132,6 +132,7 @@ static uint8_t *avpp_val(struct avps_parsed *avps, uint16_t vendor_id, uint16_t 
 	return avp->data;
 }
 
+#if 0
 static int avpp_len(struct avps_parsed *avps, uint16_t vendor_id, uint16_t type)
 {
 	struct avp_parsed *avp = avps_parsed_find(avps, vendor_id, type);
@@ -139,6 +140,7 @@ static int avpp_len(struct avps_parsed *avps, uint16_t vendor_id, uint16_t type)
 		return 0;
 	return avp->data_len;
 }
+#endif
 
 int avpp_val_u32(struct avps_parsed *avps, uint16_t vendor_id, uint16_t type,
 		 uint32_t *u32)
