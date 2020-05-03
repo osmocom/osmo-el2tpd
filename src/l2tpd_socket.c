@@ -1,8 +1,10 @@
-/* generic unix socket interface
- *
- * (C) 2016 by Alexander Couzens <lynxis@fe80.eu>
+/* generic unix socket interface */
+
+/* (C) 2016 by sysmocom - s.f.m.c. GmbH, Author: Alexander Couzens <lynxis@fe80.eu>
  *
  * All Rights Reserved
+ *
+ * SPDX-License-Identifier: GPL-2.0+
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
