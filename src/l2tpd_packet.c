@@ -565,6 +565,7 @@ static int rx_scc_rq(struct l2tpd_connection *l2c, struct msgb *msg, struct avps
 	struct sockaddr *sockaddr = msg->dst;
 	char *host_name = NULL;
 	uint16_t pw;
+	int rc;
 
 	/* Abort if Pseudowire capability doesn't include 6(HDLC) */
 	if (avpp_val_u16(ap, VENDOR_IETF, AVP_IETF_PW_CAP_LIST, &pw) < 0 ||
@@ -577,12 +578,12 @@ static int rx_scc_rq(struct l2tpd_connection *l2c, struct msgb *msg, struct avps
 		uint32_t remote_ccid, router_id;
 		l2c = l2tpd_cc_alloc(l2i);
 		/* Get Assigned CCID and store in l2cc->remote.ccid */
-		avpp_val_u32(ap, VENDOR_IETF, AVP_IETF_AS_CTRL_CON_ID,
-			     &remote_ccid);
+		rc = avpp_val_u32(ap, VENDOR_IETF, AVP_IETF_AS_CTRL_CON_ID, &remote_ccid);
+		OSMO_ASSERT(rc == 0);
 		l2c->remote.ccid = remote_ccid;
 		/* Router ID AVP */
-		if (avpp_val_u32(ap, VENDOR_IETF, AVP_IETF_ROUTER_ID,
-				 &router_id))
+		rc = avpp_val_u32(ap, VENDOR_IETF, AVP_IETF_ROUTER_ID, &router_id);
+		if (rc == 0)
 			l2c->remote.router_id = router_id;
 		/* Host Name AVP */
 		host_name = (char *) avpp_val(ap, VENDOR_IETF, AVP_IETF_HOST_NAME);
