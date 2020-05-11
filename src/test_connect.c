@@ -47,7 +47,7 @@ int socket_read(struct osmo_fd *bfd, unsigned int flags)
 	}
 	msgb_put(msg, rc);
 	printf("Recv data\n");
-	printf(msgb_hexdump(msg));
+	printf("%s", msgb_hexdump(msg));
 	printf("\n");
 
 	msgb_free(msg);
