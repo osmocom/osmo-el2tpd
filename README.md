@@ -9,3 +9,7 @@ All code has been independently developed without any information or
 assistance from Ericsson, merely by observing protocol traces between
 the SIU 02 and whatever is the Ericsson-provided server side
 implementation next to the BSC.
+
+Warning: The code currently hard-codes 172.30.42.3 as the IP address
+of the host running L2TPD.  Making this configurable is likely the
+first thing you need to do before using it...
