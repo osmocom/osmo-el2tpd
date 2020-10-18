@@ -84,7 +84,7 @@ static int l2tp_sock_accept(struct osmo_fd *bfd, unsigned int flags)
 	}
 
 	conn_bfd->fd = rc;
-	conn_bfd->when = BSC_FD_READ;
+	conn_bfd->when = OSMO_FD_READ;
 
 	if (osmo_fd_register(conn_bfd) != 0) {
 		LOGP(state->log_class, LOGL_ERROR, "Failed to register new connection fd\n");
@@ -142,7 +142,7 @@ int l2tp_socket_init(struct l2tp_socket_state *state, const char *sock_path, int
 		return -1;
 	}
 
-	bfd->when = BSC_FD_READ;
+	bfd->when = OSMO_FD_READ;
 	bfd->cb = l2tp_sock_accept;
 
 	rc = osmo_fd_register(bfd);

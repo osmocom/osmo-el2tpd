@@ -58,7 +58,7 @@ int connect_bfd(struct osmo_fd *bfd, const char *sock_path)
 {
 	int rc = 0;
 
-	bfd->when = BSC_FD_READ;
+	bfd->when = OSMO_FD_READ;
 	bfd->cb = socket_read;
 	bfd->fd = osmo_sock_unix_init(SOCK_SEQPACKET, 0, sock_path,OSMO_SOCK_F_CONNECT);
 

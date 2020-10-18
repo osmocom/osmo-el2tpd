@@ -88,7 +88,7 @@ static int l2tpd_instance_start(struct l2tpd_instance *li)
 
 	INIT_LLIST_HEAD(&li->connections);
 
-	li->l2tp_ofd.when = BSC_FD_READ;
+	li->l2tp_ofd.when = OSMO_FD_READ;
 	li->l2tp_ofd.cb = l2tp_ip_read_cb;
 	li->l2tp_ofd.data = li;
 
