@@ -88,10 +88,7 @@ static int l2tpd_instance_start(struct l2tpd_instance *li)
 
 	INIT_LLIST_HEAD(&li->connections);
 
-	li->l2tp_ofd.when = OSMO_FD_READ;
-	li->l2tp_ofd.cb = l2tp_ip_read_cb;
-	li->l2tp_ofd.data = li;
-
+	osmo_fd_setup(&li->l2tp_ofd, -1, OSMO_FD_READ, l2tp_ip_read_cb, li, 0);
 	rc = osmo_sock_init_ofd(&li->l2tp_ofd, AF_INET, SOCK_RAW,
 				IPPROTO_L2TP, li->cfg.bind_ip, 0, 0);
 	if (rc < 0)
