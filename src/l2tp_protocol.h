@@ -24,6 +24,8 @@
  *
  */
 
+#include "netinet/in.h"
+
 #ifndef IPPROTO_L2TP
 #define IPPROTO_L2TP	115
 #endif
